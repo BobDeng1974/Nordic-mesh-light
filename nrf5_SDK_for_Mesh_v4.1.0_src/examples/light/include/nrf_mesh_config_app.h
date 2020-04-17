@@ -56,10 +56,10 @@
 #define DEVICE_COMPANY_ID (ACCESS_COMPANY_ID_NORDIC)
 
 /** Device product identifier. */
-#define DEVICE_PRODUCT_ID (0x0000)
+#define DEVICE_PRODUCT_ID (0x0001)
 
 /** Device version identifier. */
-#define DEVICE_VERSION_ID (0x0000)
+#define DEVICE_VERSION_ID (0x0001)
 
 /** @} end of DEVICE_CONFIG */
 
@@ -79,7 +79,7 @@
  * @note To fit the configuration and health models, this value must equal at least
  * the number of models needed by the application plus two.
  */
-#define ACCESS_MODEL_COUNT (3)
+#define ACCESS_MODEL_COUNT (5)
 
 /**
  * The number of elements in the application.
@@ -95,7 +95,7 @@
  * @note This value must equal @ref ACCESS_MODEL_COUNT minus the number of
  * models operating on shared states.
  */
-#define ACCESS_SUBSCRIPTION_LIST_COUNT (ACCESS_MODEL_COUNT)
+#define ACCESS_SUBSCRIPTION_LIST_COUNT (8)
 
 /**
  * @defgroup ACCESS_RELIABLE_CONFIG Configuration of access layer reliable transfer
@@ -169,7 +169,7 @@
  *
  * @{
  */
-#define GAP_DEVICE_NAME                 "nRF5x Mesh Dimmable Light"
+#define GAP_DEVICE_NAME                 "Light"
 /** @} end of BLE_SOFTDEVICE_SUPPORT_CONFIG */
 
 /** @} end of NRF_MESH_CONFIG_CORE */

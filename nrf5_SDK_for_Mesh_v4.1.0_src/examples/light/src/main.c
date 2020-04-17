@@ -42,6 +42,8 @@
 #include "boards.h"
 #include "app_timer.h"
 
+#include "simple_hal.h"
+
 /* Core */
 #include "nrf_mesh_config_core.h"
 #include "nrf_mesh_gatt.h"
@@ -57,6 +59,7 @@
 #include "mesh_app_utils.h"
 
 /* Models */
+#include "generic_onoff_server.h"
 #include "generic_level_server.h"
 
 /* Logging and RTT */
@@ -64,18 +67,24 @@
 #include "rtt_input.h"
 
 /* Example specific includes */
+#include "app_config.h"
 #include "nrf_mesh_config_app.h"
 #include "nrf.h"
 #include "example_common.h"
 #include "pwm_utils.h"
 #include "nrf_mesh_config_examples.h"
+#include "app_onoff.h"
 #include "app_level.h"
 #include "ble_softdevice_support.h"
 
 /*****************************************************************************
  * Definitions
  *****************************************************************************/
-#define APP_LEVEL_STEP_SIZE     (16384L)
+#define ONOFF_SERVER_0_LED          (BSP_LED_0)
+#define APP_ONOFF_ELEMENT_INDEX     (0)
+#define APP_LEVEL_ELEMENT_INDEX     (0)
+
+#define APP_LEVEL_STEP_SIZE     (1024L)
 
 /* Controls if the model instance should force all mesh messages to be segmented messages. */
 #define APP_FORCE_SEGMENTATION  (false)
@@ -86,6 +95,12 @@
 /*****************************************************************************
  * Forward declaration of static functions
  *****************************************************************************/
+static void app_onoff_server_set_cb(const app_onoff_server_t * p_server, bool onoff);
+static void app_onoff_server_get_cb(const app_onoff_server_t * p_server, bool * p_present_onoff);
+static void app_onoff_server_transition_cb(const app_onoff_server_t * p_server,
+                                                uint32_t transition_time_ms, bool target_onoff);
+
+
 static void app_level_server_set_cb(const app_level_server_t * p_server, int16_t present_level);
 static void app_level_server_get_cb(const app_level_server_t * p_server, int16_t * p_present_level);
 static void app_level_server_transition_cb(const app_level_server_t * p_server,
@@ -97,6 +112,41 @@ static void app_level_server_transition_cb(const app_level_server_t * p_server,
  * Static variables
  *****************************************************************************/
 static bool m_device_provisioned;
+
+/* Generic OnOff server structure definition and initialization */
+APP_ONOFF_SERVER_DEF(m_onoff_server_0,
+                     APP_FORCE_SEGMENTATION,
+                     APP_MIC_SIZE,
+                     app_onoff_server_set_cb,
+                     app_onoff_server_get_cb,
+                     app_onoff_server_transition_cb)
+
+/* Callback for updating the hardware state */
+static void app_onoff_server_set_cb(const app_onoff_server_t * p_server, bool onoff)
+{
+    /* Resolve the server instance here if required, this example uses only 1 instance. */
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Setting GPIO value: %d\n", onoff)
+
+    hal_led_pin_set(ONOFF_SERVER_0_LED, onoff);
+
+}
+
+/* Callback for reading the hardware state */
+static void app_onoff_server_get_cb(const app_onoff_server_t * p_server, bool * p_present_onoff)
+{
+    /* Resolve the server instance here if required, this example uses only 1 instance. */
+
+    *p_present_onoff = hal_led_pin_get(ONOFF_SERVER_0_LED);
+}
+
+/* Callback for updating the hardware state */
+static void app_onoff_server_transition_cb(const app_onoff_server_t * p_server,
+                                                uint32_t transition_time_ms, bool target_onoff)
+{
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Transition time: %d, Target OnOff: %d\n",
+                                       transition_time_ms, target_onoff);
+}
 
 /* Application level generic level server structure definition and initialization */
 APP_LEVEL_SERVER_DEF(m_level_server_0,
@@ -149,8 +199,13 @@ static void app_level_server_transition_cb(const app_level_server_t * p_server,
 
 static void app_model_init(void)
 {
+    /* Instantiate onoff server on element index APP_ONOFF_ELEMENT_INDEX */
+    ERROR_CHECK(app_onoff_init(&m_onoff_server_0, APP_ONOFF_ELEMENT_INDEX));
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "App OnOff Model Handle: %d\n", m_onoff_server_0.server.model_handle);
+
     /* Instantiate level server on element index 0 */
-    ERROR_CHECK(app_level_init(&m_level_server_0, 0));
+    ERROR_CHECK(app_level_init(&m_level_server_0, APP_LEVEL_ELEMENT_INDEX));
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "App Level Model Handle: %d\n", m_level_server_0.server.model_handle);
 }
 
 /*************************************************************************************************/
@@ -159,6 +214,7 @@ static void node_reset(void)
 {
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "----- Node reset  -----\n");
     /* This function may return if there are ongoing flash operations. */
+    hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_RESET);
     mesh_stack_device_reset();
 }
 
@@ -201,6 +257,18 @@ static void button_event_handler(uint32_t button_number)
         {
             m_pwm0_present_level = (m_pwm0_present_level + APP_LEVEL_STEP_SIZE) >= INT16_MAX ?
                                    INT16_MAX : m_pwm0_present_level + APP_LEVEL_STEP_SIZE;
+            break;
+        }
+
+        /* Pressing SW1 on the Development Kit will result in LED state to toggle and trigger
+        the STATUS message to inform client about the state change. This is a demonstration of
+        state change publication due to local event. */
+        case 3:
+        {
+            __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "User action \n");
+            hal_led_pin_set(ONOFF_SERVER_0_LED, !hal_led_pin_get(ONOFF_SERVER_0_LED));
+            app_onoff_status_publish(&m_onoff_server_0);
+
             break;
         }
 
@@ -253,6 +321,30 @@ static void app_rtt_input_handler(int key)
     }
 }
 
+static void device_identification_start_cb(uint8_t attention_duration_s)
+{
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "device_identification_start_cb\n");
+
+    hal_led_mask_set(LEDS_MASK, false);
+    hal_led_blink_ms(BSP_LED_2_MASK  | BSP_LED_3_MASK,
+                     LED_BLINK_ATTENTION_INTERVAL_MS,
+                     LED_BLINK_ATTENTION_COUNT(attention_duration_s));
+}
+
+static void device_identification_stop_cb()
+{
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "device_identification_stop_cb\n");
+}
+
+static void provisioning_aborted_cb(void)
+{
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "provisioning_aborted_cb\n");
+
+    hal_led_blink_stop();
+}
+
 static void unicast_address_print(void)
 {
     dsm_local_unicast_address_t node_address;
@@ -272,6 +364,10 @@ static void provisioning_complete_cb(void)
 #endif
 
     unicast_address_print();
+
+    hal_led_blink_stop();
+    hal_led_mask_set(LEDS_MASK, LED_MASK_STATE_OFF);
+    hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_PROV);
 }
 
 static void models_init_cb(void)
@@ -308,13 +404,18 @@ static void mesh_init(void)
 static void initialize(void)
 {
     __LOG_INIT(LOG_SRC_APP | LOG_SRC_ACCESS | LOG_SRC_BEARER, LOG_LEVEL_INFO, LOG_CALLBACK_DEFAULT);
-    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "----- BLE Mesh Dimming Server Demo -----\n");
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "----- BLE Mesh Light -----\n");
 
     pwm_utils_enable(&m_pwm);
 
     ERROR_CHECK(app_timer_init());
+    hal_leds_init();
 
     ble_stack_init();
+
+#if BUTTON_BOARD
+    ERROR_CHECK(hal_buttons_init(button_event_handler));
+#endif
 
 #if MESH_FEATURE_GATT_ENABLED
     gap_params_init();
@@ -336,9 +437,9 @@ static void start(void)
             .p_static_data    = static_auth_data,
             .prov_sd_ble_opt_set_cb = NULL,
             .prov_complete_cb = provisioning_complete_cb,
-            .prov_device_identification_start_cb = NULL,
-            .prov_device_identification_stop_cb = NULL,
-            .prov_abort_cb = NULL,
+            .prov_device_identification_start_cb = device_identification_start_cb,
+            .prov_device_identification_stop_cb = device_identification_stop_cb,
+            .prov_abort_cb = provisioning_aborted_cb,
             .p_device_uri = EX_URI_DM_SERVER
         };
         ERROR_CHECK(mesh_provisionee_prov_start(&prov_start_params));
@@ -352,7 +453,10 @@ static void start(void)
 
     ERROR_CHECK(mesh_stack_start());
 
-    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, m_usage_string);
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, m_usage_string);\
+
+    hal_led_mask_set(LEDS_MASK, LED_MASK_STATE_OFF);
+    hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_START);
 }
 
 int main(void)
