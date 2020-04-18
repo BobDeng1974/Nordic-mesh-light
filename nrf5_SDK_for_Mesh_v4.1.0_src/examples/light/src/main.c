@@ -101,8 +101,8 @@ static void app_onoff_server_transition_cb(const app_onoff_server_t * p_server,
                                                 uint32_t transition_time_ms, bool target_onoff);
 
 
-static void app_level_server_set_cb(const app_level_server_t * p_server, int16_t present_level);
-static void app_level_server_get_cb(const app_level_server_t * p_server, int16_t * p_present_level);
+static void app_level_server_set_cb(const app_level_server_t * p_server, uint16_t present_level);
+static void app_level_server_get_cb(const app_level_server_t * p_server, uint16_t * p_present_level);
 static void app_level_server_transition_cb(const app_level_server_t * p_server,
                                                 uint32_t transition_time_ms, uint16_t target_level,
                                                 app_transition_type_t transition_type);
@@ -175,8 +175,6 @@ static void app_onoff_server_set_cb(const app_onoff_server_t * p_server, bool on
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
 
-    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Setting GPIO value: %d\n", onoff)
-
    // hal_led_pin_set(ONOFF_SERVER_0_LED, onoff);
     led1_state_on_set(onoff);
 }
@@ -213,32 +211,30 @@ APP_LEVEL_SERVER_DEF(m_level_server_0,
 //static int32_t m_pwm0_present_level;
 
 /* Callback for updating the hardware state */
-static void app_level_server_set_cb(const app_level_server_t * p_server, int16_t present_level)
+static void app_level_server_set_cb(const app_level_server_t * p_server, uint16_t present_level)
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
 
-    uint16_t level = present_level;
-    if (present_level < 0) {
-        level += UINT16_MAX;
-    }
-    
-    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET1: Level: %d  uint16 %d \n", present_level, level);
+//    uint16_t level = present_level;
+//    if (present_level < 0) {
+//        level += UINT16_MAX;
+//    }
 
-    led1_level_set(level);
+    led1_level_set(present_level);
 //    m_pwm0_present_level = present_level;
 //    pwm_utils_level_set(&m_pwm, m_pwm0_present_level);
 }
 
 /* Callback for reading the hardware state */
-static void app_level_server_get_cb(const app_level_server_t * p_server, int16_t * p_present_level)
+static void app_level_server_get_cb(const app_level_server_t * p_server, uint16_t * p_present_level)
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
-    int16_t level = led1_level;
-    if (led1_level < 0) {
-        level -= UINT16_MAX;
-    }
+//    int16_t level = led1_level;
+//    if (led1_level < 0) {
+//        level -= UINT16_MAX;
+//    }
 
-    *p_present_level = level;
+    *p_present_level = led1_level;
 }
 
 /* Callback for updateing according to transition time. */

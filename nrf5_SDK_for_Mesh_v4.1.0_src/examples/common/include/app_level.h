@@ -126,25 +126,25 @@ typedef struct
     /** For storing actual required amount of level change. */
     int32_t required_delta;
     /** Initial present level required for handling Set/Delta Set message. */
-    int16_t initial_present_level;
+    uint16_t initial_present_level;
 } set_transition_t;
 
 /** Internal structure for holding Move transition related variables */
 typedef struct
 {
     /** Scaled representation of the Level value. */
-    int16_t required_move;
+    uint16_t required_move;
     /** Initial present level required for handling Set/Delta Set message. */
-    int16_t initial_present_level;
+    uint16_t initial_present_level;
 } move_transition_t;
 
 /** Internal structure to hold state and timing information. */
 typedef struct
 {
     /** Present value of the Level state */
-    int16_t present_level;
+    uint16_t present_level;
     /** Target value of the Level state, as received from the model interface. */
-    int16_t target_level;
+    uint16_t target_level;
 
     union
     {
@@ -175,7 +175,7 @@ typedef struct __app_level_server_t app_level_server_t;
  * @param[in]   p_app           Pointer to [app_level_server_t](@ref __app_level_server_t) context.
  * @param[in]   present_level   Instantaneous new level value to be used by the application
  */
-typedef void (*app_level_set_cb_t)(const app_level_server_t * p_app, int16_t present_level);
+typedef void (*app_level_set_cb_t)(const app_level_server_t * p_app, uint16_t present_level);
 
 /** Application state read callback prototype.
  * This callback is called by the app_level.c whenever application level state is required
@@ -185,7 +185,7 @@ typedef void (*app_level_set_cb_t)(const app_level_server_t * p_app, int16_t pre
  * @param[out] p_present_level   User application fills this value with the value retrived from
  *                               the hardware interface. See @ref model_callback_pointer_note.
  */
-typedef void (*app_level_get_cb_t)(const app_level_server_t * p_app, int16_t * p_present_level);
+typedef void (*app_level_get_cb_t)(const app_level_server_t * p_app, uint16_t * p_present_level);
 
 /** Application transition time callback prototype.
  *

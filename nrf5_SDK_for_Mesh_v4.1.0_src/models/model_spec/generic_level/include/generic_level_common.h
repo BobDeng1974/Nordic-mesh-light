@@ -53,10 +53,10 @@
 #define GENERIC_LEVEL_COMPANY_ID 0xFFFF
 
 /** Generic Level state minimum value. */
-#define GENERIC_LEVEL_MIN (INT16_MIN)
+#define GENERIC_LEVEL_MIN (0)
 
 /** Generic Level state maximum value. */
-#define GENERIC_LEVEL_MAX (INT16_MAX)
+#define GENERIC_LEVEL_MAX (UINT16_MAX)
 
 /**
  * Unpacked message structure typedefs are used for API interfaces and for implementing model code. This helps to minimize code
@@ -66,7 +66,7 @@
 /** Parameters for the generic_level Set message. */
 typedef struct
 {
-    int16_t level;                                       /**< Value of the Level state */
+    uint16_t level;                                       /**< Value of the Level state */
     uint8_t tid;                                          /**< Transaction ID */
 } generic_level_set_params_t;
 
@@ -80,15 +80,15 @@ typedef struct
 /** Message format for the generic_level Move Set message. */
 typedef struct
 {
-    int16_t move_level;                                    /**< Value of the Move Level state */
+    uint16_t move_level;                                    /**< Value of the Move Level state */
     uint8_t tid;                                           /**< Transaction ID */
 } generic_level_move_set_params_t;
 
 /** Parameters for the generic_level Status message. */
 typedef struct
 {
-    int16_t present_level;                                 /**< The present value of the Generic Level state */
-    int16_t target_level;                                  /**< The target value of the Generic Level state (optional) */
+    uint16_t present_level;                                 /**< The present value of the Generic Level state */
+    uint16_t target_level;                                  /**< The target value of the Generic Level state (optional) */
     uint32_t remaining_time_ms;                            /**< Remaining time value in milliseconds */
 } generic_level_status_params_t;
 

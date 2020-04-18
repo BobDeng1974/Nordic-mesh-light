@@ -313,11 +313,11 @@ static void generic_level_state_move_set_cb(const generic_level_server_t * p_sel
        Generic Level state when the transition speed is negative. */
     if (p_in->move_level > 0)
     {
-        p_app->state.target_level = INT16_MAX;
+        p_app->state.target_level = UINT16_MAX;
     }
     else
     {
-        p_app->state.target_level = INT16_MIN;
+        p_app->state.target_level = 0;
     }
 
     p_app->state.params.move.required_move = (int32_t) p_in->move_level;
