@@ -45,6 +45,7 @@
       <file file_name="../common/src/app_onoff.c" />
       <file file_name="../../models/model_spec/generic_onoff/src/generic_onoff_server.c" />
       <file file_name="../common/src/simple_hal.c" />
+      <file file_name="src/app_config_models.c" />
     </folder>
     <folder Name="Core">
       <file file_name="../../mesh/core/src/internal_event.c" />

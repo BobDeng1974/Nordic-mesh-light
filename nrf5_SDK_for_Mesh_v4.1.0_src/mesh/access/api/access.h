@@ -74,7 +74,6 @@
 #define ACCESS_COMPANY_ID_NONE (0xFFFF)
 /** Company ID value for Nordic Semiconductor. */
 #define ACCESS_COMPANY_ID_NORDIC (0x0059)
-#define ACCESS_COMPANY_ID_DECO (0x0675)
 
 /** Invalid element index. */
 #define ACCESS_ELEMENT_INDEX_INVALID (0xFFFF)
