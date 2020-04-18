@@ -438,6 +438,21 @@ static void models_init_cb(void)
     app_model_init();
 }
 
+/********** WDT Timer ***********/
+void wdt_timer_init(void) {
+    //Configure Watchdog. a) Pause watchdog while the CPU is halted by the debugger.  b) Keep the watchdog running while the CPU is sleeping.
+    NRF_WDT->CONFIG = (WDT_CONFIG_HALT_Pause << WDT_CONFIG_HALT_Pos) | ( WDT_CONFIG_SLEEP_Run << WDT_CONFIG_SLEEP_Pos);  
+    NRF_WDT->CRV = 3*32768;             //ca 3 sek. timout
+    NRF_WDT->RREN |= WDT_RREN_RR0_Msk;  //Enable reload register 0
+    NRF_WDT->TASKS_START = 1;           //Start the Watchdog timer
+}
+
+static void reset_wdt_timer(void) {
+    NRF_WDT->RR[0] = WDT_RR_RR_Reload;
+}
+
+
+/********** init and setup ***********/
 static void mesh_init(void)
 {
     mesh_stack_init_params_t init_params =
@@ -454,7 +469,7 @@ static void mesh_init(void)
     {
         case NRF_ERROR_INVALID_DATA:
             __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Data in the persistent memory was corrupted. Device starts as unprovisioned.\n");
-			__LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Reset device before start provisioning.\n");
+            __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Reset device before start provisioning.\n");
             break;
         case NRF_SUCCESS:
             break;
@@ -469,20 +484,25 @@ static void initialize(void)
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "----- BLE Mesh Light -----\n");
 
     pwm_utils_init(&m_pwm);
+    reset_wdt_timer();
 
     ERROR_CHECK(app_timer_init());
     hal_leds_init();
+    reset_wdt_timer();
 
     ble_stack_init();
+    reset_wdt_timer();
 
 #if BUTTON_BOARD
     ERROR_CHECK(hal_buttons_init(button_event_handler));
 #endif
 
+    reset_wdt_timer();
 #if MESH_FEATURE_GATT_ENABLED
     gap_params_init();
     conn_params_init();
 #endif
+    reset_wdt_timer();
 
     mesh_init();
 }
@@ -528,15 +548,18 @@ static void start(void)
     hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_START);
 }
 
-int main(void)
-{
+int main(void) {
+    wdt_timer_init();
+
     initialize();
+    reset_wdt_timer();
     start();
+    reset_wdt_timer();
 
     led1_level = APP_LEVEL_STEP_SIZE*10;
 
-    for (;;)
-    {
+    for (;;) {
         (void)sd_app_evt_wait();
+        reset_wdt_timer();
     }
 }
