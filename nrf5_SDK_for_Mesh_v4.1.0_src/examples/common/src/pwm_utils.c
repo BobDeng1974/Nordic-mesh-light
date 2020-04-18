@@ -43,19 +43,19 @@
  * [INT16_MIN, INT16_MAX] to [0, pwm_tick_max], where pwm_tick_max is the tick value for
  * the 100% PWM duty cycle.
  */
-static inline uint16_t pwm_level_to_ticks(pwm_utils_contex_t * p_ctx, int16_t signed_value)
+static inline uint16_t pwm_level_to_ticks(pwm_utils_contex_t * p_ctx, uint16_t value)
 {
     uint16_t retval;
 
     NRF_MESH_ASSERT(p_ctx->pwm_ticks_max);
     /* The pwm peripheral is enabled. */
 
-    retval = (uint16_t)(((int32_t)(signed_value - INT16_MIN) * p_ctx->pwm_ticks_max)/UINT16_MAX);
+    retval = (uint16_t)(((int32_t)value * p_ctx->pwm_ticks_max)/UINT16_MAX);
 
-    if (retval == 0)
-    {
-        retval = 1;
-    }
+//    if (retval == 0)
+//    {
+//        retval = 1;
+//    }
 
     return retval;
 }
@@ -64,26 +64,26 @@ static inline uint16_t pwm_level_to_ticks(pwm_utils_contex_t * p_ctx, int16_t si
  * [0, pwm_tick_max] to [INT16_MIN, INT16_MAX], where pwm_tick_max is the tick value for
  * the 100% PWM duty cycle.
  */
-static inline int16_t pwm_ticks_to_level(pwm_utils_contex_t * p_ctx, uint16_t ticks)
+static inline uint16_t pwm_ticks_to_level(pwm_utils_contex_t * p_ctx, uint16_t ticks)
 {
     NRF_MESH_ASSERT(p_ctx->pwm_ticks_max);
     /* The pwm peripheral is enabled. */
 
     /* pwm_level_to_ticks(INT16_MIN) = 1. */
     /* So 1 is a special case. */
-    ticks = (1 == ticks) ? 0 : ticks;
+//    ticks = (1 == ticks) ? 0 : ticks;
 
-    return ((int32_t)(UINT16_MAX * ticks)
-            - (int32_t)(INT16_MIN * p_ctx->pwm_ticks_max)) / p_ctx->pwm_ticks_max;
+  //  return ((int32_t)(UINT16_MAX * ticks) - (int32_t)(INT16_MIN * p_ctx->pwm_ticks_max)) / p_ctx->pwm_ticks_max;
+    return ((int32_t)(UINT16_MAX * ticks)) / p_ctx->pwm_ticks_max;
 }
 
 /***** Interface functions *****/
-void pwm_utils_level_set(pwm_utils_contex_t * p_ctx, int16_t level)
+void pwm_utils_level_set(pwm_utils_contex_t * p_ctx, uint16_t level)
 {
     (void) app_pwm_channel_duty_ticks_set(p_ctx->p_pwm, p_ctx->channel, pwm_level_to_ticks(p_ctx, level));
 }
 
-int16_t pwm_utils_level_get(pwm_utils_contex_t * p_ctx)
+uint16_t pwm_utils_level_get(pwm_utils_contex_t * p_ctx)
 {
     NRF_MESH_ASSERT(p_ctx->pwm_ticks_max);
     /* The pwm peripheral is enabled. */
@@ -91,11 +91,10 @@ int16_t pwm_utils_level_get(pwm_utils_contex_t * p_ctx)
     return pwm_ticks_to_level(p_ctx, app_pwm_channel_duty_ticks_get(p_ctx->p_pwm, p_ctx->channel));
 }
 
-void pwm_utils_enable(pwm_utils_contex_t * p_ctx)
-{
+void pwm_utils_init(pwm_utils_contex_t * p_ctx) {
     /* Prior to instantiation the value of pwm_tick_max is zero. */
     NRF_MESH_ASSERT(!p_ctx->pwm_ticks_max);
-   /* The pwm peripheral is not enabled. */
+    /* The pwm peripheral is not enabled. */
 
     NRF_MESH_ERROR_CHECK(app_pwm_init(p_ctx->p_pwm, p_ctx->p_pwm_config, NULL));
     p_ctx->pwm_ticks_max = app_pwm_cycle_ticks_get(p_ctx->p_pwm);
@@ -104,6 +103,12 @@ void pwm_utils_enable(pwm_utils_contex_t * p_ctx)
     /* The pwm peripheral uses pwm_tick_max as a divisor. */
     /* Thus the value of pwm_tick_max must be non-zero here.*/
     NRF_MESH_ASSERT(p_ctx->pwm_ticks_max);
+}
 
+void pwm_utils_enable(pwm_utils_contex_t * p_ctx) {
     app_pwm_enable(p_ctx->p_pwm);
+}
+
+void pwm_utils_disable(pwm_utils_contex_t * p_ctx) {
+    app_pwm_disable(p_ctx->p_pwm);
 }

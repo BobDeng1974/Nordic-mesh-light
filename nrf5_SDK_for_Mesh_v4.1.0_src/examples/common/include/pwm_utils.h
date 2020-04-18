@@ -71,11 +71,25 @@ typedef struct
 
 
 /**
+ * Init the PWM channel.
+ *
+ * @param[in] p_ctx   Pointer to a PWM utility context structure @ref pwm_utils_contex_t.
+ */
+void pwm_utils_init(pwm_utils_contex_t * p_ctx);
+
+/**
  * Enables the PWM channel.
  *
  * @param[in] p_ctx   Pointer to a PWM utility context structure @ref pwm_utils_contex_t.
  */
 void pwm_utils_enable(pwm_utils_contex_t * p_ctx);
+
+/**
+ * Disable the PWM channel.
+ *
+ * @param[in] p_ctx   Pointer to a PWM utility context structure @ref pwm_utils_contex_t.
+ */
+void pwm_utils_disable(pwm_utils_contex_t * p_ctx);
 
 /**
  * Set the PWM duty cycle corresponding to given int16 value.
@@ -86,7 +100,7 @@ void pwm_utils_enable(pwm_utils_contex_t * p_ctx);
  * @param[in] p_ctx   Pointer to a PWM utils context structure @ref pwm_utils_contex_t.
  * @param[in] level   Desired PWM duty cycle represented in the form of int16 value.
  */
-void pwm_utils_level_set(pwm_utils_contex_t * p_ctx, int16_t level);
+void pwm_utils_level_set(pwm_utils_contex_t * p_ctx, uint16_t level);
 
 /**
  * Get the int16 value corresponding to the PWM duty cycle.
@@ -97,7 +111,7 @@ void pwm_utils_level_set(pwm_utils_contex_t * p_ctx, int16_t level);
  * @param[in] p_ctx   Pointer to a PWM utils context structure @ref pwm_utils_contex_t.
  * @returns int16 representation of the current PWM duty cycle.
  */
-int16_t pwm_utils_level_get(pwm_utils_contex_t * p_ctx);
+uint16_t pwm_utils_level_get(pwm_utils_contex_t * p_ctx);
 
 /** @} end of PWM_UTILS */
 

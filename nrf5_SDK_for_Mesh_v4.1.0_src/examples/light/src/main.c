@@ -76,7 +76,7 @@
 #include "app_onoff.h"
 #include "app_level.h"
 #include "ble_softdevice_support.h"
-
+#include "config_server.h"
 /*****************************************************************************
  * Definitions
  *****************************************************************************/
@@ -113,6 +113,55 @@ static void app_level_server_transition_cb(const app_level_server_t * p_server,
  *****************************************************************************/
 static bool m_device_provisioned;
 
+dsm_local_unicast_address_t node_address;
+
+/* PWM hardware instance and associated variables */
+/* Note: PWM cycle period determines the the max value that can be used to represent 100%
+ * duty cycles, therefore present_level value scaling is required to get pwm tick value
+ * between 0 and pwm_utils_contex_t:pwm_ticks_max.
+ */
+static APP_PWM_INSTANCE(PWM0, 1);
+static app_pwm_config_t m_pwm0_config = APP_PWM_DEFAULT_CONFIG_1CH(200, BSP_LED_0);
+static pwm_utils_contex_t m_pwm = {
+                                    .p_pwm = &PWM0,
+                                    .p_pwm_config = &m_pwm0_config,
+                                    .channel = 0
+                                  };
+
+
+/************************** LED Control *************************************/
+
+static uint16_t led1_level;
+static bool led1_state_on;
+
+void led1_level_set(uint16_t level) {
+
+    led1_level = level;
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET: Level: %d\n", led1_level);
+
+    if (led1_state_on) {
+        pwm_utils_level_set(&m_pwm, led1_level);
+
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Get: Level: %d\n", pwm_utils_level_get(&m_pwm));
+    }
+}
+
+void led1_state_on_set(bool is_on) {
+
+    led1_state_on = is_on;
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET: State: %d\n", led1_state_on);
+
+    if (led1_state_on) {
+        pwm_utils_enable(&m_pwm);
+        led1_level_set(led1_level);
+    } else {
+        pwm_utils_disable(&m_pwm);
+    }
+
+}
+
 /* Generic OnOff server structure definition and initialization */
 APP_ONOFF_SERVER_DEF(m_onoff_server_0,
                      APP_FORCE_SEGMENTATION,
@@ -128,8 +177,8 @@ static void app_onoff_server_set_cb(const app_onoff_server_t * p_server, bool on
 
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Setting GPIO value: %d\n", onoff)
 
-    hal_led_pin_set(ONOFF_SERVER_0_LED, onoff);
-
+   // hal_led_pin_set(ONOFF_SERVER_0_LED, onoff);
+    led1_state_on_set(onoff);
 }
 
 /* Callback for reading the hardware state */
@@ -137,7 +186,9 @@ static void app_onoff_server_get_cb(const app_onoff_server_t * p_server, bool * 
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
 
-    *p_present_onoff = hal_led_pin_get(ONOFF_SERVER_0_LED);
+    //*p_present_onoff = hal_led_pin_get(ONOFF_SERVER_0_LED);
+
+    *p_present_onoff = led1_state_on;
 }
 
 /* Callback for updating the hardware state */
@@ -157,35 +208,37 @@ APP_LEVEL_SERVER_DEF(m_level_server_0,
                      app_level_server_get_cb,
                      app_level_server_transition_cb);
 
-/* PWM hardware instance and associated variables */
-/* Note: PWM cycle period determines the the max value that can be used to represent 100%
- * duty cycles, therefore present_level value scaling is required to get pwm tick value
- * between 0 and pwm_utils_contex_t:pwm_ticks_max.
- */
-static APP_PWM_INSTANCE(PWM0, 1);
-static app_pwm_config_t m_pwm0_config = APP_PWM_DEFAULT_CONFIG_1CH(200, BSP_LED_0);
-static pwm_utils_contex_t m_pwm = {
-                                    .p_pwm = &PWM0,
-                                    .p_pwm_config = &m_pwm0_config,
-                                    .channel = 0
-                                  };
 
 /* Application variable for holding instantaneous level value */
-static int32_t m_pwm0_present_level;
+//static int32_t m_pwm0_present_level;
 
 /* Callback for updating the hardware state */
 static void app_level_server_set_cb(const app_level_server_t * p_server, int16_t present_level)
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
-    m_pwm0_present_level = present_level;
-    pwm_utils_level_set(&m_pwm, m_pwm0_present_level);
+
+    uint16_t level = present_level;
+    if (present_level < 0) {
+        level += UINT16_MAX;
+    }
+    
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET1: Level: %d  uint16 %d \n", present_level, level);
+
+    led1_level_set(level);
+//    m_pwm0_present_level = present_level;
+//    pwm_utils_level_set(&m_pwm, m_pwm0_present_level);
 }
 
 /* Callback for reading the hardware state */
 static void app_level_server_get_cb(const app_level_server_t * p_server, int16_t * p_present_level)
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
-    *p_present_level = m_pwm0_present_level;
+    int16_t level = led1_level;
+    if (led1_level < 0) {
+        level -= UINT16_MAX;
+    }
+
+    *p_present_level = level;
 }
 
 /* Callback for updateing according to transition time. */
@@ -240,6 +293,7 @@ static void button_event_handler(uint32_t button_number)
 {
     /* Increase button number because the buttons on the board is marked with 1 to 4 */
     button_number++;
+    uint16_t new_level = 0;
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Button %u pressed\n", button_number);
     switch (button_number)
     {
@@ -248,15 +302,21 @@ static void button_event_handler(uint32_t button_number)
         change publication due to local event. */
         case 1:
         {
-            m_pwm0_present_level = (m_pwm0_present_level - APP_LEVEL_STEP_SIZE) <= INT16_MIN ?
-                                   INT16_MIN : m_pwm0_present_level - APP_LEVEL_STEP_SIZE;
+//            if (led1_level < APP_LEVEL_STEP_SIZE) {
+//                new_level = 0;
+//            } else {
+//                new_level = led1_level - APP_LEVEL_STEP_SIZE;
+//            }
+            new_level = (led1_level < APP_LEVEL_STEP_SIZE) ? 0 : led1_level - APP_LEVEL_STEP_SIZE;
+//            new_level = (led1_level - APP_LEVEL_STEP_SIZE) <= INT16_MIN ? INT16_MIN : m_pwm0_present_level - APP_LEVEL_STEP_SIZE;
             break;
         }
 
         case 2:
         {
-            m_pwm0_present_level = (m_pwm0_present_level + APP_LEVEL_STEP_SIZE) >= INT16_MAX ?
-                                   INT16_MAX : m_pwm0_present_level + APP_LEVEL_STEP_SIZE;
+
+            new_level = ((UINT16_MAX - led1_level) < APP_LEVEL_STEP_SIZE) ? UINT16_MAX : led1_level + APP_LEVEL_STEP_SIZE;
+            //new_level = (led1_level + APP_LEVEL_STEP_SIZE) >= INT16_MAX ? INT16_MAX : m_pwm0_present_level + APP_LEVEL_STEP_SIZE;
             break;
         }
 
@@ -266,8 +326,10 @@ static void button_event_handler(uint32_t button_number)
         case 3:
         {
             __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "User action \n");
-            hal_led_pin_set(ONOFF_SERVER_0_LED, !hal_led_pin_get(ONOFF_SERVER_0_LED));
-            app_onoff_status_publish(&m_onoff_server_0);
+            //hal_led_pin_set(ONOFF_SERVER_0_LED, !hal_led_pin_get(ONOFF_SERVER_0_LED));
+            //app_onoff_status_publish(&m_onoff_server_0);
+
+            led1_state_on_set(!led1_state_on);
 
             break;
         }
@@ -298,13 +360,16 @@ static void button_event_handler(uint32_t button_number)
 
     if (button_number == 1 || button_number == 2)
     {
-        pwm_utils_level_set(&m_pwm, m_pwm0_present_level);
-        uint32_t status = app_level_current_value_publish(&m_level_server_0);
-        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "level: %d\n", m_pwm0_present_level);
-        if ( status != NRF_SUCCESS)
-        {
-            __LOG(LOG_SRC_APP, LOG_LEVEL_WARN, "Unable to publish status message, status: %d\n", status);
-        }
+    //    pwm_utils_level_set(&m_pwm, new_level);
+        
+        led1_level_set(new_level);
+
+//        uint32_t status = app_level_current_value_publish(&m_level_server_0);
+//        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "level: %d\n", m_pwm0_present_level);
+//        if ( status != NRF_SUCCESS)
+//        {
+//            __LOG(LOG_SRC_APP, LOG_LEVEL_WARN, "Unable to publish status message, status: %d\n", status);
+//        }
     }
 }
 
@@ -347,8 +412,6 @@ static void provisioning_aborted_cb(void)
 
 static void unicast_address_print(void)
 {
-    dsm_local_unicast_address_t node_address;
-    dsm_local_unicast_addresses_get(&node_address);
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Node Address: 0x%04x \n", node_address.address_start);
 }
 
@@ -362,6 +425,8 @@ static void provisioning_complete_cb(void)
     gap_params_init();
     conn_params_init();
 #endif
+
+    dsm_local_unicast_addresses_get(&node_address);
 
     unicast_address_print();
 
@@ -406,7 +471,7 @@ static void initialize(void)
     __LOG_INIT(LOG_SRC_APP | LOG_SRC_ACCESS | LOG_SRC_BEARER, LOG_LEVEL_INFO, LOG_CALLBACK_DEFAULT);
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "----- BLE Mesh Light -----\n");
 
-    pwm_utils_enable(&m_pwm);
+    pwm_utils_init(&m_pwm);
 
     ERROR_CHECK(app_timer_init());
     hal_leds_init();
@@ -423,6 +488,148 @@ static void initialize(void)
 #endif
 
     mesh_init();
+}
+
+static uint16_t get_element_index(uint16_t element_address)
+{
+//    dsm_local_unicast_address_t node_address;
+//    dsm_local_unicast_addresses_get(&node_address);
+
+    if (element_address < node_address.address_start)
+    {
+        return ACCESS_ELEMENT_INDEX_INVALID;
+    }
+
+    uint16_t retval = element_address - node_address.address_start;
+    if (retval >= (uint16_t) ACCESS_ELEMENT_COUNT)
+    {
+        return ACCESS_ELEMENT_INDEX_INVALID;
+    }
+    else
+    {
+        return retval;
+    }
+}
+
+uint32_t config_model_publication_set(access_model_id_t model_id, bool sig_model, 
+                                        uint16_t publish_address, 
+                                        uint8_t pubstate_publish_ttl,
+                                        uint8_t pubstate_publish_period,
+                                        uint8_t pubstate_retransmit_count,
+                                        uint8_t pubstate_retransmit_interval) {
+
+    uint16_t element_address = node_address.address_start; 
+
+    uint16_t pubstate_appkey_index = 0x0000;
+
+    uint16_t element_index = get_element_index(element_address);
+
+    if (element_index == ACCESS_ELEMENT_INDEX_INVALID) {
+        return ACCESS_STATUS_INVALID_ADDRESS;
+    }
+
+    /* Get the model handle: */
+    access_model_handle_t model_handle;
+    uint32_t status = access_handle_get(element_index, model_id, &model_handle);
+    if (status != NRF_SUCCESS || (!sig_model && model_id.company_id == ACCESS_COMPANY_ID_NONE)) {
+        return ACCESS_STATUS_INVALID_MODEL;
+    }
+
+    /* Get the application key handle for the application key to publish on: */
+    dsm_handle_t publish_appkey_handle = dsm_appkey_index_to_appkey_handle(pubstate_appkey_index);
+    if (publish_appkey_handle == DSM_HANDLE_INVALID) {
+        return ACCESS_STATUS_INVALID_APPKEY;
+    }
+
+    /* Validate and add the publish address to the DSM: */
+    dsm_handle_t publish_address_handle = DSM_HANDLE_INVALID;
+    nrf_mesh_address_t publish_address_stored;
+    nrf_mesh_address_type_t publish_addr_type = NRF_MESH_ADDRESS_TYPE_GROUP;
+
+            /* Check if given publish address is different than the currently assigned address */
+            if (access_model_publish_address_get(model_handle, &publish_address_handle) != NRF_SUCCESS)
+            {
+                status = dsm_address_publish_add(publish_address, &publish_address_handle);
+            }
+            else
+            {
+                if (dsm_address_get(publish_address_handle, &publish_address_stored) == NRF_SUCCESS)
+                {
+
+                    if ((publish_address_stored.type == NRF_MESH_ADDRESS_TYPE_VIRTUAL) ||
+                        (publish_address_stored.type != NRF_MESH_ADDRESS_TYPE_VIRTUAL  &&
+                         publish_address_stored.value != publish_address))
+                    {
+                        /* This should never assert */
+                        NRF_MESH_ASSERT(dsm_address_publish_remove(publish_address_handle) == NRF_SUCCESS);
+                        status = dsm_address_publish_add(publish_address, &publish_address_handle);
+                    }
+                    else
+                    {
+                        /* Use the retrieved publish_address_handle */
+                    }
+                }
+                else
+                {
+                    status = dsm_address_publish_add(publish_address, &publish_address_handle);
+                }
+            }
+
+
+    switch (status) {
+        case NRF_ERROR_NO_MEM:
+            return ACCESS_STATUS_INSUFFICIENT_RESOURCES;
+        case NRF_SUCCESS:
+            break;
+        default:
+            return ACCESS_STATUS_UNSPECIFIED_ERROR;
+    }
+
+    /* If publish address is unassigned for non virtual set, ignore all incoming parameters */
+    if (publish_address != NRF_MESH_ADDR_UNASSIGNED)
+    {
+        access_publish_period_t publish_period;
+        access_publish_retransmit_t publish_retransmit;
+        publish_period.step_res = pubstate_publish_period >> ACCESS_PUBLISH_STEP_NUM_BITS;
+        publish_period.step_num = pubstate_publish_period & ~(0xff << ACCESS_PUBLISH_STEP_NUM_BITS);
+        publish_retransmit.count = pubstate_retransmit_count;
+        publish_retransmit.interval_steps = pubstate_retransmit_interval;
+
+
+        if (publish_period.step_num != 0)
+        {
+            /* Disable publishing for the model while updating the publication parameters: */
+            status = access_model_publish_period_set(model_handle, ACCESS_PUBLISH_RESOLUTION_100MS, 0);
+            switch (status) {
+                case NRF_SUCCESS:
+                    break;
+                case NRF_ERROR_NOT_SUPPORTED:
+                    return ACCESS_STATUS_FEATURE_NOT_SUPPORTED;
+
+                default:
+                    /* No other error should be possible. */
+                    NRF_MESH_ASSERT(false);
+                    return NRF_ERROR_NOT_SUPPORTED;
+            }
+
+            /* Set publishing parameters for the model: */
+            NRF_MESH_ASSERT(access_model_publish_period_set(model_handle, (access_publish_resolution_t) publish_period.step_res,
+                            publish_period.step_num) == NRF_SUCCESS);
+            NRF_MESH_ASSERT(access_model_publish_retransmit_set(model_handle, publish_retransmit) == NRF_SUCCESS);
+        }
+
+        NRF_MESH_ASSERT(access_model_publish_address_set(model_handle, publish_address_handle) == NRF_SUCCESS);
+        NRF_MESH_ASSERT(access_model_publish_application_set(model_handle, publish_appkey_handle) == NRF_SUCCESS);
+        NRF_MESH_ASSERT(access_model_publish_ttl_set(model_handle, pubstate_publish_ttl) == NRF_SUCCESS);
+    }
+    else
+    {
+        NRF_MESH_ASSERT(access_model_publication_stop(model_handle) == NRF_SUCCESS);
+    }
+
+    //TODO
+   // access_flash_config_store();
+    return NRF_SUCCESS;
 }
 
 static void start(void)
@@ -446,14 +653,40 @@ static void start(void)
     }
     else
     {
+
+        dsm_local_unicast_addresses_get(&node_address);
+
         unicast_address_print();
+
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Node Address: 0x%04x \n", node_address.address_start);
+
+        access_model_id_t model_id;
+        model_id.model_id = HEALTH_SERVER_MODEL_ID;
+        model_id.company_id = ACCESS_COMPANY_ID_NONE;
+        bool sig_model = true;
+
+        uint16_t publish_address = 0x7ff0;
+
+        uint8_t pubstate_publish_ttl = 0xff;
+        uint8_t pubstate_publish_period = 0x81;
+        uint8_t pubstate_retransmit_count = 0x00; 
+        uint8_t pubstate_retransmit_interval = 0x04;
+
+        uint32_t status = config_model_publication_set(model_id, sig_model, 
+                                        publish_address, 
+                                        pubstate_publish_ttl,
+                                        pubstate_publish_period,
+                                        pubstate_retransmit_count,
+                                        pubstate_retransmit_interval);
+
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "config_health_model_publication: %x\n",status);
     }
 
     mesh_app_uuid_print(nrf_mesh_configure_device_uuid_get());
 
     ERROR_CHECK(mesh_stack_start());
 
-    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, m_usage_string);\
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, m_usage_string);
 
     hal_led_mask_set(LEDS_MASK, LED_MASK_STATE_OFF);
     hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_START);
@@ -463,6 +696,8 @@ int main(void)
 {
     initialize();
     start();
+
+    led1_level = APP_LEVEL_STEP_SIZE*10;
 
     for (;;)
     {
