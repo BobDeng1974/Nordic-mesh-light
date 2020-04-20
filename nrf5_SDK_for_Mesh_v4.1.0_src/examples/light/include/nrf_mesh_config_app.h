@@ -170,6 +170,7 @@
  * @{
  */
 #define GAP_DEVICE_NAME                 "LED Light"
+#define GAP_DEVICE_NAME_LEN_MAX         64
 /** @} end of BLE_SOFTDEVICE_SUPPORT_CONFIG */
 
 /** @} end of NRF_MESH_CONFIG_CORE */

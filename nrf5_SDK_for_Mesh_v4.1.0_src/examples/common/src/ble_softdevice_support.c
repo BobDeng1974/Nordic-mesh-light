@@ -37,6 +37,8 @@
 
 #include "ble_softdevice_support.h"
 
+#include <stdlib.h>
+
 /* Module configuration */
 #include "nrf_mesh_config_examples.h"
 #include "nrf_mesh_gatt.h"
@@ -129,7 +131,7 @@ void ble_stack_init(void)
     cfg.gap_cfg.device_name_cfg.vloc        = BLE_GATTS_VLOC_STACK;
     cfg.gap_cfg.device_name_cfg.p_value     = NULL;
     cfg.gap_cfg.device_name_cfg.current_len = 0;
-    cfg.gap_cfg.device_name_cfg.max_len     = strlen(GAP_DEVICE_NAME);
+    cfg.gap_cfg.device_name_cfg.max_len     = GAP_DEVICE_NAME_LEN_MAX;
     APP_ERROR_CHECK(sd_ble_cfg_set(BLE_GAP_CFG_DEVICE_NAME, &cfg, ram_start));
 
     /* Enable BLE stack. */
@@ -187,9 +189,27 @@ void gap_params_init(void)
 
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
+    ble_gap_addr_t ble_addr;
+    sd_ble_gap_addr_get(&ble_addr);
+
+    char *macAddr = malloc(18 * sizeof(char));
+    sprintf(macAddr, " %02x:%02x:%02x:%02x:%02x:%02x",  ble_addr.addr[5],
+                                                        ble_addr.addr[4],
+                                                        ble_addr.addr[3],
+                                                        ble_addr.addr[2],
+                                                        ble_addr.addr[1],
+                                                        ble_addr.addr[0]);
+
+    char *deviceNameWithAddr = (char*)malloc(strlen(GAP_DEVICE_NAME) + strlen(macAddr));
+
+    strcpy(deviceNameWithAddr, GAP_DEVICE_NAME);
+    strcat(deviceNameWithAddr, macAddr);
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "device name %s \n", deviceNameWithAddr);
+
     err_code = sd_ble_gap_device_name_set(&sec_mode,
-                                          (const uint8_t *) GAP_DEVICE_NAME,
-                                          strlen(GAP_DEVICE_NAME));
+                                          (const uint8_t *) deviceNameWithAddr,
+                                          strlen(deviceNameWithAddr));
     APP_ERROR_CHECK(err_code);
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));

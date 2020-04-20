@@ -120,7 +120,7 @@ static void sd_state_evt_handler(nrf_sdh_state_evt_t state, void * p_context)
             cfg.gap_cfg.device_name_cfg.vloc        = BLE_GATTS_VLOC_STACK;
             cfg.gap_cfg.device_name_cfg.p_value     = NULL;
             cfg.gap_cfg.device_name_cfg.current_len = 0;
-            cfg.gap_cfg.device_name_cfg.max_len     = strlen(GAP_DEVICE_NAME);
+            cfg.gap_cfg.device_name_cfg.max_len     = GAP_DEVICE_NAME_LEN_MAX;
             APP_ERROR_CHECK(sd_ble_cfg_set(BLE_GAP_CFG_DEVICE_NAME, &cfg, ram_start));
 
             err_code = nrf_sdh_ble_enable(&ram_start);
