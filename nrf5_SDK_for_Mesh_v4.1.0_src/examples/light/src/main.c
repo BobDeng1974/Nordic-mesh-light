@@ -211,9 +211,6 @@ void led1_state_on_set(bool is_on) {
 /****************************************************************************/
 
 
-
-
-
 /* Generic OnOff server structure definition and initialization */
 APP_ONOFF_SERVER_DEF(m_onoff_server_0,
                      APP_FORCE_SEGMENTATION,
