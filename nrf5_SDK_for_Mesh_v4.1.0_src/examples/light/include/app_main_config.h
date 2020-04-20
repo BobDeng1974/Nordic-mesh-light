@@ -28,7 +28,8 @@
 
 
 /******** Storage definitions *********/
-#define LED_CONFIG_RESERVE_LEN MESH_CONFIG_ENTRY_MAX_SIZE-16
+#define APP_FLASH_PAGE_COUNT           (1)
+#define LED1_CONFIG_ENTRY_HANDLE       (0x00001)
 
 
 

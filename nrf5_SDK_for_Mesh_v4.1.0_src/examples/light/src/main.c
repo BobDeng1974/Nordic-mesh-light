@@ -48,6 +48,7 @@
 #include "nrf_mesh_config_core.h"
 #include "nrf_mesh_gatt.h"
 #include "nrf_mesh_configure.h"
+#include "nrf_mesh_events.h"
 #include "nrf_mesh.h"
 #include "mesh_stack.h"
 #include "device_state_manager.h"
@@ -81,6 +82,7 @@
 #include "config_server.h"
 #include "app_config_models.h"
 #include "app_main_config.h"
+#include "flash_helper.h"
 
 /*****************************************************************************
  * Definitions
@@ -146,38 +148,35 @@ static pwm_utils_contex_t m_pwm = {
 
 /****************************** Storage *************************************/
 
+/* Try to store app data. If busy, ask user to manually initiate operation. */
 static void save_led_config() {
-//    mesh_config_entry_id_t entry_id = LED1_CONFIG_ENTRY_ID;
-//    uint32_t status = mesh_config_entry_set(entry_id, &led1_config);
-//    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Storing config %d \n", status);
 
-
-
+    uint32_t status = app_flash_data_store(LED1_CONFIG_ENTRY_HANDLE, &led1_config, sizeof(led1_config));
+    if (status == NRF_SUCCESS) {
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Storing: Led config\n");
+    } else if (status == NRF_ERROR_NOT_SUPPORTED) {
+       __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Cannot store Led config: Persistent storage not enabled\n");
+    } else {
+        __LOG(LOG_SRC_APP, LOG_LEVEL_ERROR, "Flash busy. Cannot store Led config. To try again. \n");
+    }
 
 }
 
 static void load_led_config() {
 
-//    mesh_config_entry_id_t entry_id = LED1_CONFIG_ENTRY_ID;
-//    uint32_t status = mesh_config_entry_get(entry_id, &led1_config);
-//    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "load config %d \n", status);
-//    
-//    // NRF_ERROR_NULL 14
-//    // NRF_ERROR_INVALID_STATE 8
-//    // NRF_SUCCESS 0
-//    // NRF_ERROR_NOT_FOUND 5
-//
-//    if (status == NRF_SUCCESS) {
-//        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "load config level %d \n", led1_config.level);
-//    } 
-    
-//    else if (status == NRF_ERROR_NOT_FOUND) {
-//        led1_config.on = true;
-//        led1_config.level = LED_LEVEL_DEFAULT;
-//    p_led_config->min_level = 0;
-//    p_led_config->max_level = UINT16_MAX;
-//        save_led_config();
-//    }
+    if (app_flash_data_load(LED1_CONFIG_ENTRY_HANDLE, &led1_config, sizeof(led1_config)) == NRF_SUCCESS) {
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Led config loaded. level: %x - %d\n", led1_config.level, led1_config.level);
+        
+    } else {
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Failed to load led config\n");
+
+        led1_config.on = true;
+        led1_config.level = LED_LEVEL_DEFAULT;
+        led1_config.min_level = 0;
+        led1_config.max_level = UINT16_MAX;
+
+        save_led_config();
+    }
 }
 
 /****************************************************************************/
@@ -294,19 +293,32 @@ static void app_model_init(void)
 
 /*************************************************************************************************/
 
-static void node_reset(void)
-{
+static void node_reset(void) {
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "----- Node reset  -----\n");
     /* This function may return if there are ongoing flash operations. */
     hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_RESET);
     mesh_stack_device_reset();
 }
 
-static void config_server_evt_cb(const config_server_evt_t * p_evt)
-{
-    if (p_evt->type == CONFIG_SERVER_EVT_NODE_RESET)
-    {
+static void factory_reset(void) {
+
+//    if (mesh_stack_is_device_provisioned()) {
+#if MESH_FEATURE_GATT_PROXY_ENABLED
+        (void) proxy_stop();
+#endif
+        app_flash_clear(&led1_config, sizeof(led1_config));
+        mesh_stack_config_clear();
         node_reset();
+//    } else {
+//        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "The device is unprovisioned. Resetting has no effect.\n");
+//    }
+
+}
+
+static void config_server_evt_cb(const config_server_evt_t * p_evt) {
+    if (p_evt->type == CONFIG_SERVER_EVT_NODE_RESET) {
+        /* Trigger clearing of application data and schedule node reset. */
+        factory_reset();
     }
 }
 
@@ -337,21 +349,9 @@ static void button_event_handler(uint32_t button_number)
         }
 
         /* Initiate node reset */
-        case 4:
-        {
+        case 4: {
             /* Clear all the states to reset the node. */
-            if (mesh_stack_is_device_provisioned())
-            {
-#if MESH_FEATURE_GATT_PROXY_ENABLED
-                (void) proxy_stop();
-#endif
-                mesh_stack_config_clear();
-                node_reset();
-            }
-            else
-            {
-                __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "The device is unprovisioned. Resetting has no effect.\n");
-            }
+            factory_reset();
             break;
         }
 
@@ -448,6 +448,66 @@ static void reset_wdt_timer(void) {
 
 
 /********** init and setup ***********/
+
+static void app_start(void) {
+
+    load_led_config();
+    apply_led_config();
+    
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Starting application \n");
+
+    /* Load app specific data */
+//    if (app_flash_data_load(APP_DATA_ENTRY_HANDLE, &m_app_secmat_flash[0], sizeof(m_app_secmat_flash)) == NRF_SUCCESS)
+//    {
+//        for (uint8_t i = 0; i < MAX_ENOCEAN_DEVICES_SUPPORTED; i++)
+//        {
+//            m_app_secmat[i].p_ble_gap_addr = &m_app_secmat_flash[i].ble_gap_addr[0];
+//            m_app_secmat[i].p_key = &m_app_secmat_flash[i].key[0];
+//            m_app_secmat[i].p_seq = &m_app_secmat_flash[i].seq;
+//            m_enocean_dev_cnt++;
+//            enocean_secmat_add(&m_app_secmat[i]);
+//            __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Restored: Enocean security materials\n");
+//        }
+//    }
+//    else
+//    {
+//        m_enocean_dev_cnt = 0;
+//    }
+
+    /* Install rx callback to intercept incoming ADV packets so that they can be passed to the
+    EnOcean packet processor */
+    //nrf_mesh_rx_cb_set(rx_callback);
+}
+
+static void app_mesh_core_event_cb (const nrf_mesh_evt_t * p_evt);
+
+static nrf_mesh_evt_handler_t m_mesh_core_event_handler = { .evt_cb = app_mesh_core_event_cb };
+
+static void app_mesh_core_event_cb(const nrf_mesh_evt_t * p_evt)
+{
+    /* USER_NOTE: User can insert mesh core event proceesing here */
+    switch (p_evt->type)
+    {
+        /* Start user application specific functions only when flash is stable */
+        case NRF_MESH_EVT_FLASH_STABLE:
+            __LOG(LOG_SRC_APP, LOG_LEVEL_DBG1, "Mesh evt: FLASH_STABLE \n");
+            {
+                static bool s_app_started;
+                if (!s_app_started)
+                {
+                    /* Flash operation initiated during initialization has been completed */
+                    app_start();
+                    s_app_started = true;
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+}
+
 static void mesh_init(void)
 {
     mesh_stack_init_params_t init_params =
@@ -471,6 +531,10 @@ static void mesh_init(void)
         default:
             ERROR_CHECK(status);
     }
+
+    /* Register event handler to receive NRF_MESH_EVT_FLASH_STABLE. Application functionality will
+    be started after this event */
+    nrf_mesh_evt_handler_add(&m_mesh_core_event_handler);
 }
 
 static void initialize(void)
@@ -500,6 +564,8 @@ static void initialize(void)
     reset_wdt_timer();
 
     mesh_init();
+
+    app_flash_init();
 }
 
 static void start(void)
@@ -542,11 +608,6 @@ static void start(void)
     hal_led_mask_set(LEDS_MASK, LED_MASK_STATE_OFF);
     hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_START);
 
-
-    load_led_config();
-    apply_led_config();
-
-
 }
 
 int main(void) {
@@ -565,7 +626,9 @@ int main(void) {
 
 //TODO
 /*
-storage
+
+name
+fast provisioning
 
 custom model
 
