@@ -53,6 +53,8 @@
 #include "device_state_manager.h"
 #include "access_config.h"
 #include "proxy.h"
+#include "flash_manager.h"
+#include "mesh_config.h"
 
 /* Provisioning and configuration */
 #include "mesh_provisionee.h"
@@ -78,19 +80,33 @@
 #include "ble_softdevice_support.h"
 #include "config_server.h"
 #include "app_config_models.h"
+#include "app_main_config.h"
+
 /*****************************************************************************
  * Definitions
  *****************************************************************************/
 #define ONOFF_SERVER_0_LED          (BSP_LED_0)
-#define APP_ONOFF_ELEMENT_INDEX     (0)
-#define APP_LEVEL_ELEMENT_INDEX     (0)
 
-#define APP_LEVEL_STEP_SIZE     (1024L)
 
-/* Controls if the model instance should force all mesh messages to be segmented messages. */
-#define APP_FORCE_SEGMENTATION  (false)
-/* Controls the MIC size used by the model instance for sending the mesh messages. */
-#define APP_MIC_SIZE            (NRF_MESH_TRANSMIC_SIZE_SMALL)
+/*****************************************************************************
+ * Variables
+ *****************************************************************************/
+
+static const uint8_t    app_version = 1;
+static const uint16_t   app_build   = 1;
+
+static bool m_device_provisioned;
+static dsm_local_unicast_address_t node_address;
+
+char *device_name_with_addr;
+
+static led_config_t led1_config;
+
+
+ /*****************************************************************************
+ * END variables
+ *****************************************************************************/
+
 
 
 /*****************************************************************************
@@ -112,9 +128,7 @@ static void app_level_server_transition_cb(const app_level_server_t * p_server,
 /*****************************************************************************
  * Static variables
  *****************************************************************************/
-static bool m_device_provisioned;
 
-dsm_local_unicast_address_t node_address;
 
 /* PWM hardware instance and associated variables */
 /* Note: PWM cycle period determines the the max value that can be used to represent 100%
@@ -130,38 +144,76 @@ static pwm_utils_contex_t m_pwm = {
                                   };
 
 
-/************************** LED Control *************************************/
+/****************************** Storage *************************************/
 
-static uint16_t led1_level;
-static bool led1_state_on;
+static void save_led_config() {
+//    mesh_config_entry_id_t entry_id = LED1_CONFIG_ENTRY_ID;
+//    uint32_t status = mesh_config_entry_set(entry_id, &led1_config);
+//    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Storing config %d \n", status);
 
-void led1_level_set(uint16_t level) {
 
-    led1_level = level;
 
-    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET: Level: %d\n", led1_level);
 
-    if (led1_state_on) {
-        pwm_utils_level_set(&m_pwm, led1_level);
-
-        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Get: Level: %d\n", pwm_utils_level_get(&m_pwm));
-    }
 }
 
-void led1_state_on_set(bool is_on) {
+static void load_led_config() {
 
-    led1_state_on = is_on;
+//    mesh_config_entry_id_t entry_id = LED1_CONFIG_ENTRY_ID;
+//    uint32_t status = mesh_config_entry_get(entry_id, &led1_config);
+//    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "load config %d \n", status);
+//    
+//    // NRF_ERROR_NULL 14
+//    // NRF_ERROR_INVALID_STATE 8
+//    // NRF_SUCCESS 0
+//    // NRF_ERROR_NOT_FOUND 5
+//
+//    if (status == NRF_SUCCESS) {
+//        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "load config level %d \n", led1_config.level);
+//    } 
+    
+//    else if (status == NRF_ERROR_NOT_FOUND) {
+//        led1_config.on = true;
+//        led1_config.level = LED_LEVEL_DEFAULT;
+//    p_led_config->min_level = 0;
+//    p_led_config->max_level = UINT16_MAX;
+//        save_led_config();
+//    }
+}
 
-    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET: State: %d\n", led1_state_on);
+/****************************************************************************/
 
-    if (led1_state_on) {
+/************************** LED Control *************************************/
+
+static void apply_led_config() {
+    if (led1_config.on) {
         pwm_utils_enable(&m_pwm);
-        led1_level_set(led1_level);
+        pwm_utils_level_set(&m_pwm, led1_config.level);
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Get: Level: %d\n", pwm_utils_level_get(&m_pwm));
     } else {
         pwm_utils_disable(&m_pwm);
     }
-
 }
+
+void led1_level_set(uint16_t level) {
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET: Level: %d\n", level);
+    led1_config.level = level;
+    apply_led_config();
+    save_led_config();
+}
+
+void led1_state_on_set(bool is_on) {
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "SET: State: %d\n", is_on);
+    led1_config.on = is_on;
+    apply_led_config();
+    save_led_config();
+}
+
+
+/****************************************************************************/
+
+
+
+
 
 /* Generic OnOff server structure definition and initialization */
 APP_ONOFF_SERVER_DEF(m_onoff_server_0,
@@ -187,7 +239,7 @@ static void app_onoff_server_get_cb(const app_onoff_server_t * p_server, bool * 
 
     //*p_present_onoff = hal_led_pin_get(ONOFF_SERVER_0_LED);
 
-    *p_present_onoff = led1_state_on;
+    *p_present_onoff = led1_config.on;
 }
 
 /* Callback for updating the hardware state */
@@ -208,34 +260,16 @@ APP_LEVEL_SERVER_DEF(m_level_server_0,
                      app_level_server_transition_cb);
 
 
-/* Application variable for holding instantaneous level value */
-//static int32_t m_pwm0_present_level;
-
 /* Callback for updating the hardware state */
 static void app_level_server_set_cb(const app_level_server_t * p_server, uint16_t present_level)
 {
-    /* Resolve the server instance here if required, this example uses only 1 instance. */
-
-//    uint16_t level = present_level;
-//    if (present_level < 0) {
-//        level += UINT16_MAX;
-//    }
-
     led1_level_set(present_level);
-//    m_pwm0_present_level = present_level;
-//    pwm_utils_level_set(&m_pwm, m_pwm0_present_level);
 }
 
 /* Callback for reading the hardware state */
 static void app_level_server_get_cb(const app_level_server_t * p_server, uint16_t * p_present_level)
 {
-    /* Resolve the server instance here if required, this example uses only 1 instance. */
-//    int16_t level = led1_level;
-//    if (led1_level < 0) {
-//        level -= UINT16_MAX;
-//    }
-
-    *p_present_level = led1_level;
+    *p_present_level = led1_config.level;
 }
 
 /* Callback for updateing according to transition time. */
@@ -277,13 +311,7 @@ static void config_server_evt_cb(const config_server_evt_t * p_evt)
 }
 
 #if NRF_MESH_LOG_ENABLE
-static const char m_usage_string[] =
-    "\n"
-    "\t\t-------------------------------------------------------------\n"
-    "\t\t RTT 1) The brightness of the LED 1 decresses in large steps.\n"
-    "\t\t RTT 2) The brightness of the LED 1 incresses in large steps.\n"
-    "\t\t RTT 4) Clear all the states to reset the node.\n"
-    "\t\t-------------------------------------------------------------\n";
+static const char m_usage_string[] = "run!\n";
 #endif
 
 static void button_event_handler(uint32_t button_number)
@@ -292,42 +320,19 @@ static void button_event_handler(uint32_t button_number)
     button_number++;
     uint16_t new_level = 0;
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Button %u pressed\n", button_number);
-    switch (button_number)
-    {
-        /* Sending value `1` or `2` via RTT will result in LED state to change and trigger the
-        STATUS message to inform client about the state change. This is a demonstration of state
-        change publication due to local event. */
-        case 1:
-        {
-//            if (led1_level < APP_LEVEL_STEP_SIZE) {
-//                new_level = 0;
-//            } else {
-//                new_level = led1_level - APP_LEVEL_STEP_SIZE;
-//            }
-            new_level = (led1_level < APP_LEVEL_STEP_SIZE) ? 0 : led1_level - APP_LEVEL_STEP_SIZE;
-//            new_level = (led1_level - APP_LEVEL_STEP_SIZE) <= INT16_MIN ? INT16_MIN : m_pwm0_present_level - APP_LEVEL_STEP_SIZE;
+    switch (button_number) {
+        case 1:{
+            new_level = (led1_config.level < APP_LEVEL_STEP_SIZE) ? 0 : led1_config.level - APP_LEVEL_STEP_SIZE;
             break;
         }
 
-        case 2:
-        {
-
-            new_level = ((UINT16_MAX - led1_level) < APP_LEVEL_STEP_SIZE) ? UINT16_MAX : led1_level + APP_LEVEL_STEP_SIZE;
-            //new_level = (led1_level + APP_LEVEL_STEP_SIZE) >= INT16_MAX ? INT16_MAX : m_pwm0_present_level + APP_LEVEL_STEP_SIZE;
+        case 2: {
+            new_level = ((UINT16_MAX - led1_config.level) < APP_LEVEL_STEP_SIZE) ? UINT16_MAX : led1_config.level + APP_LEVEL_STEP_SIZE;
             break;
         }
 
-        /* Pressing SW1 on the Development Kit will result in LED state to toggle and trigger
-        the STATUS message to inform client about the state change. This is a demonstration of
-        state change publication due to local event. */
-        case 3:
-        {
-            __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "User action \n");
-            //hal_led_pin_set(ONOFF_SERVER_0_LED, !hal_led_pin_get(ONOFF_SERVER_0_LED));
-            //app_onoff_status_publish(&m_onoff_server_0);
-
-            led1_state_on_set(!led1_state_on);
-
+        case 3: {
+            led1_state_on_set(!led1_config.on);
             break;
         }
 
@@ -355,18 +360,8 @@ static void button_event_handler(uint32_t button_number)
             break;
     }
 
-    if (button_number == 1 || button_number == 2)
-    {
-    //    pwm_utils_level_set(&m_pwm, new_level);
-        
+    if (button_number == 1 || button_number == 2) {
         led1_level_set(new_level);
-
-//        uint32_t status = app_level_current_value_publish(&m_level_server_0);
-//        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "level: %d\n", m_pwm0_present_level);
-//        if ( status != NRF_SUCCESS)
-//        {
-//            __LOG(LOG_SRC_APP, LOG_LEVEL_WARN, "Unable to publish status message, status: %d\n", status);
-//        }
     }
 }
 
@@ -546,6 +541,12 @@ static void start(void)
 
     hal_led_mask_set(LEDS_MASK, LED_MASK_STATE_OFF);
     hal_led_blink_ms(LEDS_MASK, LED_BLINK_INTERVAL_MS, LED_BLINK_CNT_START);
+
+
+    load_led_config();
+    apply_led_config();
+
+
 }
 
 int main(void) {
@@ -556,10 +557,24 @@ int main(void) {
     start();
     reset_wdt_timer();
 
-    led1_level = APP_LEVEL_STEP_SIZE*10;
-
     for (;;) {
         (void)sd_app_evt_wait();
         reset_wdt_timer();
     }
 }
+
+//TODO
+/*
+storage
+
+custom model
+
+restart if comissioning was not finished
+
+enocean switch
+
+enocean sensor
+
+DFU
+
+*/

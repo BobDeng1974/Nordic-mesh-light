@@ -169,7 +169,7 @@
  *
  * @{
  */
-#define GAP_DEVICE_NAME                 "Light"
+#define GAP_DEVICE_NAME                 "LED Light"
 /** @} end of BLE_SOFTDEVICE_SUPPORT_CONFIG */
 
 /** @} end of NRF_MESH_CONFIG_CORE */
