@@ -5,12 +5,14 @@
 
 #include "mesh_stack.h"
 #include "access_config.h"
-
+#include "generic_onoff_server.h"
+#include "generic_level_server.h"
 #include "log.h"
 
 #define GATEWAY_PUBLISH_ARRD 0x7ff0
+#define COMMUNICATION_COMMON_GROUP_ARRD 0xFF80
 
-static uint16_t get_element_index(uint16_t element_address, dsm_local_unicast_address_t node_address) {
+uint16_t get_element_index(uint16_t element_address, dsm_local_unicast_address_t node_address) {
 
     if (element_address < node_address.address_start)
     {
@@ -28,7 +30,7 @@ static uint16_t get_element_index(uint16_t element_address, dsm_local_unicast_ad
     }
 }
 
-static uint32_t config_model_publication_set(dsm_local_unicast_address_t node_address, access_model_id_t model_id, bool sig_model, 
+uint32_t config_model_publication_set(dsm_local_unicast_address_t node_address, access_model_id_t model_id, bool sig_model, 
                                         uint16_t publish_address, 
                                         uint8_t pubstate_publish_ttl,
                                         uint8_t pubstate_publish_period,
@@ -173,4 +175,203 @@ uint32_t app_config_health_model_publication(dsm_local_unicast_address_t node_ad
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "config_health_model_publication: %x\n",status);	
 
     return status;
+}
+
+uint32_t app_config_led_status_model_publication(dsm_local_unicast_address_t node_address) {
+
+    access_model_id_t model_id = ACCESS_MODEL_SIG(GENERIC_ONOFF_SERVER_MODEL_ID);
+    bool sig_model = true;
+
+    uint16_t publish_address = GATEWAY_PUBLISH_ARRD;
+
+    uint8_t pubstate_publish_ttl = 0xff;
+    uint8_t pubstate_publish_period = 0x00;
+    uint8_t pubstate_retransmit_count = 0x00;
+    uint8_t pubstate_retransmit_interval = 0x00;
+
+    return config_model_publication_set(node_address, model_id, sig_model, 
+                                        publish_address, 
+                                        pubstate_publish_ttl,
+                                        pubstate_publish_period,
+                                        pubstate_retransmit_count,
+                                        pubstate_retransmit_interval);
+
+}
+
+uint32_t app_config_led_level_model_publication(dsm_local_unicast_address_t node_address) {
+
+    access_model_id_t model_id = ACCESS_MODEL_SIG(GENERIC_LEVEL_SERVER_MODEL_ID);
+    bool sig_model = true;
+
+    uint16_t publish_address = GATEWAY_PUBLISH_ARRD;
+
+    uint8_t pubstate_publish_ttl = 0xff;
+    uint8_t pubstate_publish_period = 0x00;
+    uint8_t pubstate_retransmit_count = 0x00;
+    uint8_t pubstate_retransmit_interval = 0x00;
+
+    return config_model_publication_set(node_address, model_id, sig_model, 
+                                        publish_address, 
+                                        pubstate_publish_ttl,
+                                        pubstate_publish_period,
+                                        pubstate_retransmit_count,
+                                        pubstate_retransmit_interval);
+
+}
+
+/*
+uint32_t app_config_communication_client_model_publication(dsm_local_unicast_address_t node_address) {
+
+    access_model_id_t model_id;
+    model_id.model_id = BASE_GENERIC_CLIENT_MODEL_ID;
+    model_id.company_id = BASE_GENERIC_COMPANY_ID;
+    bool sig_model = false;
+
+    uint16_t publish_address = COMMUNICATION_COMMON_GROUP_ARRD;
+
+    uint8_t pubstate_publish_ttl = 0xff;
+    uint8_t pubstate_publish_period = 0x00;
+    uint8_t pubstate_retransmit_count = 0x00; // ??? 0x01
+    uint8_t pubstate_retransmit_interval = 0x04; // ??? 0x00
+
+    return config_model_publication_set(node_address, model_id, sig_model, 
+                                        publish_address, 
+                                        pubstate_publish_ttl,
+                                        pubstate_publish_period,
+                                        pubstate_retransmit_count,
+                                        pubstate_retransmit_interval);
+
+}
+
+uint32_t app_config_subscription_to_communication_group() {
+
+    access_model_id_t model_id;
+    model_id.model_id = BASE_GENERIC_SERVER_MODEL_ID;
+    model_id.company_id = BASE_GENERIC_COMPANY_ID;
+    bool sig_model = false;
+
+    uint16_t element_index = get_element_index(node_address.address_start, node_address);
+    if (ACCESS_ELEMENT_INDEX_INVALID == element_index) {
+        return ACCESS_STATUS_INVALID_ADDRESS;
+    }
+
+    access_model_handle_t model_handle;
+    uint32_t status = access_handle_get(element_index, model_id, &model_handle);
+    if (status != NRF_SUCCESS || (!sig_model && model_id.company_id == ACCESS_COMPANY_ID_NONE)) {
+        return ACCESS_STATUS_INVALID_MODEL;
+    }
+
+    dsm_handle_t subscription_address_handle;
+    status = dsm_address_subscription_add(COMMUNICATION_COMMON_GROUP_ARRD, &subscription_address_handle);
+    if (status != NRF_SUCCESS) {
+        switch (status) {
+            case NRF_ERROR_INVALID_ADDR:
+                return ACCESS_STATUS_INVALID_ADDRESS;
+                break;
+            case NRF_ERROR_NO_MEM:
+                return ACCESS_STATUS_INSUFFICIENT_RESOURCES;
+                break;
+            default:
+                return ACCESS_STATUS_UNSPECIFIED_ERROR;
+                break;
+        }
+    }
+
+    status = access_model_subscription_add(model_handle, subscription_address_handle);
+    if (status != NRF_SUCCESS) {
+        NRF_MESH_ASSERT(dsm_address_subscription_remove(subscription_address_handle) == NRF_SUCCESS);
+
+        if (status == NRF_ERROR_NOT_SUPPORTED) {
+            return ACCESS_STATUS_NOT_A_SUBSCRIBE_MODEL;
+        } else {
+            return ACCESS_STATUS_UNSPECIFIED_ERROR;
+        }
+    } else {
+        access_flash_config_store();
+        return NRF_SUCCESS;
+    }
+}
+*/
+
+uint32_t app_config_bind_app_key(dsm_local_unicast_address_t node_address, access_model_id_t model_id, bool sig_model) {
+
+    uint16_t element_index = get_element_index(node_address.address_start, node_address);
+    if (ACCESS_ELEMENT_INDEX_INVALID == element_index) {
+        return ACCESS_STATUS_INVALID_ADDRESS;
+    }
+    access_model_handle_t model_handle;
+    uint32_t status = access_handle_get(element_index, model_id, &model_handle);
+    if (status != NRF_SUCCESS || (!sig_model && model_id.company_id == ACCESS_COMPANY_ID_NONE)) {
+        return ACCESS_STATUS_INVALID_MODEL;
+    }
+    uint16_t appkey_index = 0x0000 & CONFIG_MSG_KEY_INDEX_12_MASK;
+    dsm_handle_t appkey_handle = dsm_appkey_index_to_appkey_handle(appkey_index);
+
+    status = access_model_application_bind(model_handle, appkey_handle);
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "access_model_application_bind %x : %x\n",model_id.model_id, status);
+
+    switch (status) {
+        case NRF_SUCCESS:
+            return ACCESS_STATUS_SUCCESS;
+            //TODO
+            //access_flash_config_store();
+            break;
+        case NRF_ERROR_NOT_FOUND:
+            return ACCESS_STATUS_INVALID_MODEL;
+            break;
+        case NRF_ERROR_INVALID_PARAM:
+            return ACCESS_STATUS_INVALID_APPKEY;
+            break;
+        default:
+            return ACCESS_STATUS_UNSPECIFIED_ERROR;
+            break;
+    }
+}
+
+uint32_t app_config_bind_app_keys(dsm_local_unicast_address_t node_address) {
+
+    access_model_id_t model_id;
+
+    //model_id = ACCESS_MODEL_SIG(HEALTH_SERVER_MODEL_ID);
+    model_id.model_id = HEALTH_SERVER_MODEL_ID;
+    model_id.company_id = ACCESS_COMPANY_ID_NONE;
+    uint32_t status = app_config_bind_app_key(node_address, model_id, true);
+    if (status != NRF_SUCCESS) {
+        return status;
+    }
+    
+    //model_id = ACCESS_MODEL_SIG(GENERIC_ONOFF_SERVER_MODEL_ID);
+    model_id.model_id = GENERIC_ONOFF_SERVER_MODEL_ID;
+    model_id.company_id = ACCESS_COMPANY_ID_NONE;
+    status = app_config_bind_app_key(node_address, model_id, true);
+    if (status != NRF_SUCCESS) {
+        return status;
+    }
+
+    //model_id = ACCESS_MODEL_SIG(GENERIC_LEVEL_SERVER_MODEL_ID);
+    model_id.model_id = GENERIC_LEVEL_SERVER_MODEL_ID;
+    model_id.company_id = ACCESS_COMPANY_ID_NONE;
+    status = app_config_bind_app_key(node_address, model_id, true);
+    if (status != NRF_SUCCESS) {
+        return status;
+    }
+
+    /*
+    model_id.model_id = BASE_GENERIC_SERVER_MODEL_ID;
+    model_id.company_id = BASE_GENERIC_COMPANY_ID;
+    status = bind_app_key(node_address, model_id, false);
+    if (status != NRF_SUCCESS) {
+        return status;
+    }
+
+    model_id.model_id = BASE_GENERIC_CLIENT_MODEL_ID;
+    model_id.company_id = BASE_GENERIC_COMPANY_ID;
+    status = bind_app_key(node_address, model_id, false);
+    if (status != NRF_SUCCESS) {
+        return status;
+    }
+    */
+
+    return NRF_SUCCESS;
 }

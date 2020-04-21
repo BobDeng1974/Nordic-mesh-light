@@ -313,6 +313,18 @@ static void config_server_evt_cb(const config_server_evt_t * p_evt) {
     if (p_evt->type == CONFIG_SERVER_EVT_NODE_RESET) {
         /* Trigger clearing of application data and schedule node reset. */
         factory_reset();
+    } else if (p_evt->type == CONFIG_SERVER_EVT_APPKEY_ADD) {
+        uint32_t status = app_config_bind_app_keys(node_address);
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "bind_app_keys: %x\n",status);
+
+         status = app_config_health_model_publication(node_address);
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "app_config_health_model_publication: %x\n",status);
+
+        status = app_config_led_status_model_publication(node_address);
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "app_config_led_status_model_publication: %x\n",status);
+
+        status = app_config_led_level_model_publication(node_address);
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "app_config_led_level_model_publication: %x\n",status);
     }
 }
 
@@ -339,6 +351,7 @@ static void button_event_handler(uint32_t button_number)
 
         case 3: {
             led1_state_on_set(!led1_config.on);
+            app_onoff_status_publish(&m_onoff_server_0);
             break;
         }
 
@@ -356,6 +369,7 @@ static void button_event_handler(uint32_t button_number)
 
     if (button_number == 1 || button_number == 2) {
         led1_level_set(new_level);
+        app_level_current_value_publish(&m_level_server_0);
     }
 }
 
@@ -620,8 +634,6 @@ int main(void) {
 
 //TODO
 /*
-
-fast provisioning
 
 custom model
 
