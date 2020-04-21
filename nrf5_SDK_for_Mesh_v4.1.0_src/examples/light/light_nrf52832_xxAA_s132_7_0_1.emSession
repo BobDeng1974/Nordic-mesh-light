@@ -25,6 +25,7 @@
   <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1"/>
   <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1;Application"/>
   <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1;Core"/>
+  <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1;nRF5 SDK"/>
  </Project>
  <Register1>
   <RegisterWindow visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/msp;CPU/psp;CPU/cfbp;CPU/internal" binaryNodes="" asciiNodes="" openNodes="CPU - Current Context" name="light_nrf52832_xxAA_s132_7.0.1" decimalNodes="" octalNodes="" unsignedNodes=""/>
@@ -57,12 +58,13 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="84" y="109" useTextEdit="1" useBinaryEdit="0" left="0" path="src/main.c" selected="0" top="79" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="2" y="54" useTextEdit="1" useBinaryEdit="0" left="0" path="include/app_main_config.h" selected="0" top="4" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="442" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/core/src/mesh_config.c" selected="0" top="393" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="175" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/core/api/mesh_config_entry.h" selected="0" top="142" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="15" y="38" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/core/src/flash_manager.c" selected="0" top="21" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="350" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/core/api/flash_manager.h" selected="1" top="334" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="590" useTextEdit="1" useBinaryEdit="0" left="0" path="src/main.c" selected="1" top="573" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="30" useTextEdit="1" useBinaryEdit="0" left="0" path="include/app_main_config.h" selected="0" top="3" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" useBinaryEdit="0" left="0" path="include/app_config.h" selected="0" top="26" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/include/example_common.h" selected="0" top="64" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="171" useTextEdit="1" useBinaryEdit="0" left="0" path="include/nrf_mesh_config_app.h" selected="0" top="152" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="212" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/ble_softdevice_support.c" selected="0" top="193" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="122" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/mesh_provisionee.c" selected="0" top="99" codecName="Default"/>
  </Files>
- <ARMCrossStudioWindow activeProject="light_nrf52832_xxAA_s132_7.0.1" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="C:/Users/fixer/Desktop/decoFW/examples/light_switch/proxy_server/src" debugSearchPath="" autoConnectCapabilities="3711"/>
+ <ARMCrossStudioWindow activeProject="light_nrf52832_xxAA_s132_7.0.1" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="/Volumes/Data/!pojects/Telemetry/DECO FW/Mesh 4.1/Nordic-mesh-light/nrf5_SDK_for_Mesh_v4.1.0_src/examples/light/src" debugSearchPath="" autoConnectCapabilities="3199"/>
 </session>

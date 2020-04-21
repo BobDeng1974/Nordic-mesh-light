@@ -87,7 +87,6 @@
 /*****************************************************************************
  * Definitions
  *****************************************************************************/
-#define ONOFF_SERVER_0_LED          (BSP_LED_0)
 
 
 /*****************************************************************************
@@ -224,7 +223,6 @@ static void app_onoff_server_set_cb(const app_onoff_server_t * p_server, bool on
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
 
-   // hal_led_pin_set(ONOFF_SERVER_0_LED, onoff);
     led1_state_on_set(onoff);
 }
 
@@ -233,7 +231,6 @@ static void app_onoff_server_get_cb(const app_onoff_server_t * p_server, bool * 
 {
     /* Resolve the server instance here if required, this example uses only 1 instance. */
 
-    //*p_present_onoff = hal_led_pin_get(ONOFF_SERVER_0_LED);
 
     *p_present_onoff = led1_config.on;
 }
@@ -624,7 +621,6 @@ int main(void) {
 //TODO
 /*
 
-name
 fast provisioning
 
 custom model
@@ -634,6 +630,8 @@ restart if comissioning was not finished
 enocean switch
 
 enocean sensor
+
+uart communication
 
 DFU
 

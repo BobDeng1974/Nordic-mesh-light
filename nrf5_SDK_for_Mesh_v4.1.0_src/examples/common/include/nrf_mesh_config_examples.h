@@ -88,12 +88,14 @@
 
 /** Minimum acceptable connection interval. */
 #ifndef MIN_CONN_INTERVAL
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(150,  UNIT_1_25_MS)
+//#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(150,  UNIT_1_25_MS)
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(10,  UNIT_1_25_MS)
 #endif
 
 /** Maximum acceptable connection interval. */
 #ifndef MAX_CONN_INTERVAL
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(250,  UNIT_1_25_MS)
+//#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(250,  UNIT_1_25_MS)
+#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(60,  UNIT_1_25_MS)
 #endif
 
 /** Slave latency. */
