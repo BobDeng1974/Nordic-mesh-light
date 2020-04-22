@@ -64,7 +64,7 @@
 /* Models */
 #include "generic_onoff_server.h"
 #include "generic_level_server.h"
-
+#include "access.h"
 /* Logging and RTT */
 #include "log.h"
 #include "rtt_input.h"
@@ -84,6 +84,9 @@
 #include "app_main_config.h"
 #include "flash_helper.h"
 
+#include "base_communication_common.h"
+#include "base_communication_client.h"
+#include "base_communication_server.h"
 /*****************************************************************************
  * Definitions
  *****************************************************************************/
@@ -103,12 +106,13 @@ char *device_name_with_addr;
 
 static led_config_t led1_config;
 
-
+static base_communication_server_t m_base_communication_command_server;
+static base_communication_client_t m_base_communication_command_client;
  /*****************************************************************************
  * END variables
  *****************************************************************************/
 
-
+static void factory_reset(void);
 
 /*****************************************************************************
  * Forward declaration of static functions
@@ -150,6 +154,8 @@ static pwm_utils_contex_t m_pwm = {
 /* Try to store app data. If busy, ask user to manually initiate operation. */
 static void save_led_config() {
 
+    if (!m_device_provisioned) { return; }
+
     uint32_t status = app_flash_data_store(LED1_CONFIG_ENTRY_HANDLE, &led1_config, sizeof(led1_config));
     if (status == NRF_SUCCESS) {
         __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Storing: Led config\n");
@@ -168,6 +174,12 @@ static void load_led_config() {
         
     } else {
         __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Failed to load led config\n");
+
+        if (m_device_provisioned) {
+            __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Provisioning not finished successfully! hard reset!\n");
+            factory_reset();
+            return;
+        }
 
         led1_config.on = true;
         led1_config.level = LED_LEVEL_DEFAULT;
@@ -274,6 +286,95 @@ static void app_level_server_transition_cb(const app_level_server_t * p_server,
                                        transition_time_ms, target_level, transition_type);
 }
 
+
+
+/************************** base communication command handle *************************************/
+
+uint16_t convertFrom8To16(uint8_t dataFirst, uint8_t dataSecond) {
+    uint16_t dataBoth = 0x0000;
+
+    dataBoth = dataFirst;
+    dataBoth = dataBoth << 8;
+    dataBoth |= dataSecond;
+    return dataBoth;
+}
+
+
+
+static uint8_t base_communication_command_cb(const base_communication_server_t * p_server, 
+                                              const base_communication_msg_t *command, 
+                                              base_communication_msg_response_t * p_response) {
+
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "base_ommunication_command_id %02x\n",command->opcode);
+    //__LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "tid %d \n",command->tid);
+   // __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "length %d \n",command->length);
+ //   __LOG_XB(LOG_SRC_APP, LOG_LEVEL_INFO, "Unencrypted data", command->command_buffer, command->length);
+
+    if (command->opcode == BASE_COMMUNICATION_SUB_COMMAND_COMISSIONING_FINISHED) {
+        //TODO
+//        device_provisioned_time = 0;
+//        m_device_provisioned = true;
+//        need_reinit_connection = true;
+//        erp_store_state();
+
+        m_device_provisioned = true;
+
+        led1_config.on = true;
+        led1_config.level = LED_LEVEL_DEFAULT;
+        led1_config.min_level = 0;
+        led1_config.max_level = UINT16_MAX;
+
+        save_led_config();
+
+        return BASE_COMMUNICATION_STATUS_SUCCESS;
+    } else if (command->opcode == BASE_COMMUNICATION_SUB_COMMAND_IP_ADDR_GET) {
+
+        ble_gap_addr_t ble_addr;
+        sd_ble_gap_addr_get(&ble_addr);
+
+        static uint8_t msg[6];
+        msg[0] = ble_addr.addr[0];
+        msg[1] = ble_addr.addr[1];
+        msg[2] = ble_addr.addr[2];
+        msg[3] = ble_addr.addr[3];
+        msg[4] = ble_addr.addr[4];
+        msg[5] = ble_addr.addr[5];
+
+        p_response->response = &msg[0];
+        p_response->length = 6;
+
+        return BASE_COMMUNICATION_STATUS_MESSAGE;
+
+    } else if (command->opcode == BASE_COMMUNICATION_SUB_COMMAND_FW_VERSION_GET) {
+
+        static uint8_t msg[3];
+        msg[1] = app_version;
+        msg[2] = (app_build & 0xff);
+        msg[3] = (app_build >> 8);
+
+        p_response->response = &msg[0];
+        p_response->length = 3;
+
+        return BASE_COMMUNICATION_STATUS_MESSAGE;
+
+    } 
+
+    return BASE_COMMUNICATION_STATUS_ERROR_NO_HANDLER;
+}
+
+static void base_communication_command_timeout_cb(access_model_handle_t handle, void * p_client)
+{
+     __LOG(LOG_SRC_APP, LOG_LEVEL_ERROR, "Acknowledged send timedout\n");
+}
+
+static void base_communication_command_status_cb(const base_communication_client_t * p_client, base_communication_status_t status, uint16_t src)
+{
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "src %02x \n", src);
+    __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "status %02x \n", status);
+}
+
+/****************************************************************************/
+
 static void app_model_init(void)
 {
     /* Instantiate onoff server on element index APP_ONOFF_ELEMENT_INDEX */
@@ -283,6 +384,16 @@ static void app_model_init(void)
     /* Instantiate level server on element index 0 */
     ERROR_CHECK(app_level_init(&m_level_server_0, APP_LEVEL_ELEMENT_INDEX));
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "App Level Model Handle: %d\n", m_level_server_0.server.model_handle);
+
+    m_base_communication_command_server.command_cb = base_communication_command_cb;
+    ERROR_CHECK(base_communication_server_init(&m_base_communication_command_server, 0));
+    ERROR_CHECK(access_model_subscription_list_alloc(m_base_communication_command_server.model_handle));
+
+    m_base_communication_command_client.status_cb = base_communication_command_status_cb;
+    m_base_communication_command_client.timeout_cb = base_communication_command_timeout_cb;
+    //__LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Initializing client %d\n", base_generic_client_init(&m_base_generic_command_client, 0));
+    ERROR_CHECK(base_communication_client_init(&m_base_communication_command_client, 0));
+    ERROR_CHECK(access_model_subscription_list_alloc(m_base_communication_command_client.model_handle));
 }
 
 /*************************************************************************************************/
@@ -325,6 +436,17 @@ static void config_server_evt_cb(const config_server_evt_t * p_evt) {
 
         status = app_config_led_level_model_publication(node_address);
         __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "app_config_led_level_model_publication: %x\n",status);
+
+        status = app_config_subscription_to_communication_group(node_address);
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "app_config_subscription_to_communication_group: %x\n",status);
+        
+        status = app_config_communication_client_model_publication(node_address);
+        __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "app_config_communication_client_model_publication: %x\n",status);
+//        if (status != NRF_SUCCESS) {
+//            configure_successfull = 0x03;
+//            return;
+//        }
+
     }
 }
 
@@ -464,24 +586,6 @@ static void app_start(void) {
     
 
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Starting application \n");
-
-    /* Load app specific data */
-//    if (app_flash_data_load(APP_DATA_ENTRY_HANDLE, &m_app_secmat_flash[0], sizeof(m_app_secmat_flash)) == NRF_SUCCESS)
-//    {
-//        for (uint8_t i = 0; i < MAX_ENOCEAN_DEVICES_SUPPORTED; i++)
-//        {
-//            m_app_secmat[i].p_ble_gap_addr = &m_app_secmat_flash[i].ble_gap_addr[0];
-//            m_app_secmat[i].p_key = &m_app_secmat_flash[i].key[0];
-//            m_app_secmat[i].p_seq = &m_app_secmat_flash[i].seq;
-//            m_enocean_dev_cnt++;
-//            enocean_secmat_add(&m_app_secmat[i]);
-//            __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Restored: Enocean security materials\n");
-//        }
-//    }
-//    else
-//    {
-//        m_enocean_dev_cnt = 0;
-//    }
 
     /* Install rx callback to intercept incoming ADV packets so that they can be passed to the
     EnOcean packet processor */

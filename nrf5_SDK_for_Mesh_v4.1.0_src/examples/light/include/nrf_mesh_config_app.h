@@ -79,7 +79,7 @@
  * @note To fit the configuration and health models, this value must equal at least
  * the number of models needed by the application plus two.
  */
-#define ACCESS_MODEL_COUNT (5)
+#define ACCESS_MODEL_COUNT (6)
 
 /**
  * The number of elements in the application.

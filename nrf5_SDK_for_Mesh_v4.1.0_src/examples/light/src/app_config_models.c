@@ -7,6 +7,9 @@
 #include "access_config.h"
 #include "generic_onoff_server.h"
 #include "generic_level_server.h"
+#include "base_communication_common.h"
+#include "base_communication_client.h"
+#include "base_communication_server.h"
 #include "log.h"
 
 #define GATEWAY_PUBLISH_ARRD 0x7ff0
@@ -219,12 +222,12 @@ uint32_t app_config_led_level_model_publication(dsm_local_unicast_address_t node
 
 }
 
-/*
+
 uint32_t app_config_communication_client_model_publication(dsm_local_unicast_address_t node_address) {
 
     access_model_id_t model_id;
-    model_id.model_id = BASE_GENERIC_CLIENT_MODEL_ID;
-    model_id.company_id = BASE_GENERIC_COMPANY_ID;
+    model_id.model_id = BASE_COMMUNICATION_CLIENT_MODEL_ID;
+    model_id.company_id = BASE_COMMUNICATION_COMPANY_ID;
     bool sig_model = false;
 
     uint16_t publish_address = COMMUNICATION_COMMON_GROUP_ARRD;
@@ -243,11 +246,11 @@ uint32_t app_config_communication_client_model_publication(dsm_local_unicast_add
 
 }
 
-uint32_t app_config_subscription_to_communication_group() {
+uint32_t app_config_subscription_to_communication_group(dsm_local_unicast_address_t node_address) {
 
     access_model_id_t model_id;
-    model_id.model_id = BASE_GENERIC_SERVER_MODEL_ID;
-    model_id.company_id = BASE_GENERIC_COMPANY_ID;
+    model_id.model_id = BASE_COMMUNICATION_SERVER_MODEL_ID;
+    model_id.company_id = BASE_COMMUNICATION_COMPANY_ID;
     bool sig_model = false;
 
     uint16_t element_index = get_element_index(node_address.address_start, node_address);
@@ -287,11 +290,11 @@ uint32_t app_config_subscription_to_communication_group() {
             return ACCESS_STATUS_UNSPECIFIED_ERROR;
         }
     } else {
-        access_flash_config_store();
+        //access_flash_config_store();
         return NRF_SUCCESS;
     }
 }
-*/
+
 
 uint32_t app_config_bind_app_key(dsm_local_unicast_address_t node_address, access_model_id_t model_id, bool sig_model) {
 
@@ -357,21 +360,21 @@ uint32_t app_config_bind_app_keys(dsm_local_unicast_address_t node_address) {
         return status;
     }
 
-    /*
-    model_id.model_id = BASE_GENERIC_SERVER_MODEL_ID;
-    model_id.company_id = BASE_GENERIC_COMPANY_ID;
-    status = bind_app_key(node_address, model_id, false);
+    
+    model_id.model_id = BASE_COMMUNICATION_SERVER_MODEL_ID;
+    model_id.company_id = BASE_COMMUNICATION_COMPANY_ID;
+    status = app_config_bind_app_key(node_address, model_id, false);
     if (status != NRF_SUCCESS) {
         return status;
     }
 
-    model_id.model_id = BASE_GENERIC_CLIENT_MODEL_ID;
-    model_id.company_id = BASE_GENERIC_COMPANY_ID;
-    status = bind_app_key(node_address, model_id, false);
+    model_id.model_id = BASE_COMMUNICATION_CLIENT_MODEL_ID;
+    model_id.company_id = BASE_COMMUNICATION_COMPANY_ID;
+    status = app_config_bind_app_key(node_address, model_id, false);
     if (status != NRF_SUCCESS) {
         return status;
     }
-    */
+    
 
     return NRF_SUCCESS;
 }
