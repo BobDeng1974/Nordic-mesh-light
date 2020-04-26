@@ -103,33 +103,53 @@ static void adv_init(void)
     advertiser_instance_init(&m_advertiser, NULL, m_adv_buffer, ADVERTISER_BUFFER_SIZE);
 }
 
+#define APP_MEASURED_RSSI               0xC3                               /**< The Beacon's measured RSSI at 1 meter distance in dBm. */
+#define APP_MAJOR_VALUE                 0x01, 0x02                         /**< Major value used to identify Beacons. */
+#define APP_MINOR_VALUE                 0x03, 0x04                         /**< Minor value used to identify Beacons. */
+#define APP_BEACON_UUID                 0x01, 0x12, 0x23, 0x34, \
+                                        0x45, 0x56, 0x67, 0x78, \
+                                        0x89, 0x9a, 0xab, 0xbc, \
+                                        0xcd, 0xde, 0xef, 0xf0            /**< Proprietary UUID for Beacon. */
+
 static void adv_start(void)
 {
     /* Let scanner accept Complete Local Name AD Type. */
     bearer_adtype_add(BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME);
 
     advertiser_enable(&m_advertiser);
+//    static const uint8_t adv_data[] =
+//    {
+//        0x11, /* AD data length (including type, but not itself) */
+//        BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, /* AD data type (Complete local name) */
+//        'N',  /* AD data payload (Name of device) */
+//        'o',
+//        'r',
+//        'd',
+//        'i',
+//        'c',
+//        ' ',
+//        'S',
+//        'e',
+//        'm',
+//        'i',
+//        ' ',
+//        'M',
+//        'e',
+//        's',
+//        'h'
+//    };
+
+
     static const uint8_t adv_data[] =
     {
-        0x11, /* AD data length (including type, but not itself) */
-        BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, /* AD data type (Complete local name) */
-        'N',  /* AD data payload (Name of device) */
-        'o',
-        'r',
-        'd',
-        'i',
-        'c',
-        ' ',
-        'S',
-        'e',
-        'm',
-        'i',
-        ' ',
-        'M',
-        'e',
-        's',
-        'h'
+        0x02, 0x01 , 0x06 , 0x1a , 0xff , 0x4c , 0x00 , 0x02 , 0x15,
+        APP_BEACON_UUID,     // 128 bit UUID value.
+        APP_MAJOR_VALUE,     // Major arbitrary value that can be used to distinguish between Beacons.
+        APP_MINOR_VALUE,     // Minor arbitrary value that can be used to distinguish between Beacons.
+        APP_MEASURED_RSSI    // Manufacturer specific information. The Beacon's measured TX power in
+                         // this implementation.
     };
+
 
     /* Allocate packet */
     adv_packet_t * p_packet = advertiser_packet_alloc(&m_advertiser, sizeof(adv_data));
