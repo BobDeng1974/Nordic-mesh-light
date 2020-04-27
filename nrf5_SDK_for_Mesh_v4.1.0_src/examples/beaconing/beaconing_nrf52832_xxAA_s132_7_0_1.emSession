@@ -58,11 +58,11 @@
  </Watch4>
  <Files>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" useBinaryEdit="0" left="0" path="../../doc/getting_started/SES.md" selected="0" top="0" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="5" y="303" useTextEdit="1" useBinaryEdit="0" left="0" path="src/main.c" selected="1" top="109" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="303" useTextEdit="1" useBinaryEdit="0" left="0" path="src/main.c" selected="1" top="36" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="333" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/bearer/src/advertiser.c" selected="0" top="299" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="188" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/bearer/api/advertiser.h" selected="0" top="151" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="151" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/core/include/packet.h" selected="0" top="114" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="279" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../nRF5_SDK_16.0.0_98a08e2/components/softdevice/s132/headers/ble_gap.h" selected="0" top="242" codecName="Default"/>
  </Files>
- <ARMCrossStudioWindow activeProject="beaconing_nrf52832_xxAA_s132_7.0.1" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="/Volumes/Data/!pojects/Telemetry/DECO FW/Mesh 4.1/decomeshv4.1/nrf5_SDK_for_Mesh_v4.1.0_src/examples/dimming/dimming_server/src" debugSearchPath="" autoConnectCapabilities="3711"/>
+ <ARMCrossStudioWindow activeProject="beaconing_nrf52832_xxAA_s132_7.0.1" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="/Volumes/Data/!pojects/Telemetry/DECO FW/Mesh 4.1/decomeshv4.1/nrf5_SDK_for_Mesh_v4.1.0_src/examples/dimming/dimming_server/src" debugSearchPath="" autoConnectCapabilities="3199"/>
 </session>

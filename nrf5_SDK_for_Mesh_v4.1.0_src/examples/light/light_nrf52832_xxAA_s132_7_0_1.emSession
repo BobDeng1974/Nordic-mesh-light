@@ -2,7 +2,7 @@
 <session>
  <Bookmarks/>
  <Breakpoints groups="Breakpoints" active_group="Breakpoints">
-  <BreakpointListItem trigger="" line="1154" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../../mesh/access/src/access.c" useHWbreakpoint="false"/>
+  <BreakpointListItem trigger="" line="1154" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="4" filename="../../mesh/access/src/access.c" useHWbreakpoint="false"/>
   <BreakpointListItem trigger="" line="105" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../common/src/app_error_weak.c" useHWbreakpoint="false"/>
   <BreakpointListItem trigger="" line="115" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../common/src/app_error_weak.c" useHWbreakpoint="false"/>
   <BreakpointListItem trigger="" line="123" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../common/src/app_error_weak.c" useHWbreakpoint="false"/>
@@ -35,6 +35,7 @@
   <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1;Core"/>
   <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1;nRF5 SDK"/>
   <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1;Other"/>
+  <ProjectSessionItem path="light_nrf52832_xxAA_s132_7.0.1;light_nrf52832_xxAA_s132_7.0.1;Toolchain"/>
  </Project>
  <Register1>
   <RegisterWindow visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/msp;CPU/psp;CPU/cfbp;CPU/internal" binaryNodes="" asciiNodes="" openNodes="CPU - Current Context" name="light_nrf52832_xxAA_s132_7.0.1" decimalNodes="" octalNodes="" unsignedNodes=""/>
@@ -67,7 +68,7 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="721" useTextEdit="1" useBinaryEdit="0" left="0" path="src/main.c" selected="1" top="701" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="763" useTextEdit="1" useBinaryEdit="0" left="0" path="src/main.c" selected="1" top="751" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="28" useTextEdit="1" useBinaryEdit="0" left="0" path="include/app_main_config.h" selected="0" top="0" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" useBinaryEdit="0" left="0" path="include/app_config.h" selected="0" top="26" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/include/example_common.h" selected="0" top="15" codecName="Default"/>
@@ -77,18 +78,22 @@
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="101" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/include/nrf_mesh_config_examples.h" selected="0" top="79" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="66" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/pwm_utils.c" selected="0" top="20" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="101" useTextEdit="1" useBinaryEdit="0" left="0" path="src/flash_helper.c" selected="0" top="78" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="225" useTextEdit="1" useBinaryEdit="0" left="0" path="src/app_config_models.c" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="44" y="156" useTextEdit="1" useBinaryEdit="0" left="0" path="src/app_config_models.c" selected="0" top="128" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="10" useTextEdit="1" useBinaryEdit="0" left="0" path="include/app_config_models.h" selected="0" top="0" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="44" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/app_onoff.c" selected="0" top="27" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="347" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/app_level.c" selected="0" top="322" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="264" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/access/api/access.h" selected="0" top="247" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="350" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/app_level.c" selected="0" top="322" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="3" y="82" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/access/api/access.h" selected="0" top="39" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="55" useTextEdit="1" useBinaryEdit="0" left="0" path="../../models/model_spec/generic_onoff/include/generic_onoff_server.h" selected="0" top="38" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="106" useTextEdit="1" useBinaryEdit="0" left="0" path="../../models/base_communication/src/base_communication_server.c" selected="0" top="74" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="148" useTextEdit="1" useBinaryEdit="0" left="0" path="../../models/base_communication/src/base_communication_client.c" selected="0" top="126" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="114" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/app_error_weak.c" selected="0" top="86" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="104" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/app_error_weak.c" selected="0" top="86" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="108" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/access/src/access.c" selected="0" top="84" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="65" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../nRF5_SDK_16.0.0_98a08e2/components/softdevice/s132/headers/nrf_error.h" selected="0" top="43" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="16" useTextEdit="1" useBinaryEdit="0" left="0" path="../../models/base_communication/include/base_communication_common.h" selected="0" top="2" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="14" y="20" useTextEdit="1" useBinaryEdit="0" left="0" path="../../models/base_communication/include/base_communication_common.h" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="84" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/core/include/timer.h" selected="0" top="59" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="293" useTextEdit="1" useBinaryEdit="0" left="0" path="/Applications/SEGGER Embedded Studio for ARM 4.50/source/thumb_crt0.s" selected="0" top="268" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="274" useTextEdit="1" useBinaryEdit="0" left="0" path="../common/src/app_transition.c" selected="0" top="249" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="204" useTextEdit="1" useBinaryEdit="0" left="0" path="../../mesh/core/src/timer_scheduler.c" selected="0" top="185" codecName=""/>
  </Files>
- <ARMCrossStudioWindow activeProject="light_nrf52832_xxAA_s132_7.0.1" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="/Volumes/Data/!pojects/Telemetry/DECO FW/Mesh 4.1/Nordic-mesh-light/nrf5_SDK_for_Mesh_v4.1.0_src/models/base_communication/src" debugSearchPath="" autoConnectCapabilities="3199"/>
+ <ARMCrossStudioWindow activeProject="light_nrf52832_xxAA_s132_7.0.1" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="/Volumes/Data/!pojects/Telemetry/DECO FW/Mesh 4.1/Nordic-mesh-light/nrf5_SDK_for_Mesh_v4.1.0_src/models/base_communication/src" debugSearchPath="" autoConnectCapabilities="3711"/>
 </session>

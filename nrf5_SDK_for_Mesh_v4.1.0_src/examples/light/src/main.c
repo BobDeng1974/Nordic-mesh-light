@@ -106,6 +106,8 @@ char *device_name_with_addr;
 
 static led_config_t led1_config;
 
+static timestamp_t commissioning_start_time = 0;
+
 static base_communication_server_t m_base_communication_command_server;
 static base_communication_client_t m_base_communication_command_client;
  /*****************************************************************************
@@ -310,15 +312,40 @@ static uint8_t base_communication_command_cb(const base_communication_server_t *
    // __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "length %d \n",command->length);
  //   __LOG_XB(LOG_SRC_APP, LOG_LEVEL_INFO, "Unencrypted data", command->command_buffer, command->length);
 
-    if (command->opcode == BASE_COMMUNICATION_SUB_COMMAND_COMISSIONING_FINISHED) {
-        //TODO
-//        device_provisioned_time = 0;
-//        m_device_provisioned = true;
-//        need_reinit_connection = true;
-//        erp_store_state();
+    if (command->opcode == BASE_COMMUNICATION_SUB_COMMAND_COMMISSIONING_FINISHED) {
+
+
+
+        static uint8_t msg[18];
+        msg[0] = 0;//configure_successfull;
+        msg[1] = app_version;
+        msg[2] = (app_build & 0xff);
+        msg[3] = (app_build >> 8);
+
+        msg[4] = 0x01;
+        msg[5] = 0x02;
+        msg[6] = 0x03;
+        msg[7] = 0x04;
+        
+        msg[8] = 0x05;
+        msg[9] = 0x06;
+        msg[10] = 0x07;
+        msg[11] = 0x08;
+
+        msg[12] = 0x09;
+        msg[13] = 0x10;
+
+        msg[14] = 0x1a;
+        msg[15] = 0x1b;
+        msg[16] = 0x1c;
+        msg[17] = 0x1d;
+        
+        p_response->response = &msg[0];
+        p_response->length = 18;
+        
 
         m_device_provisioned = true;
-
+        commissioning_start_time = 0;
         led1_config.on = true;
         led1_config.level = LED_LEVEL_DEFAULT;
         led1_config.min_level = 0;
@@ -326,7 +353,7 @@ static uint8_t base_communication_command_cb(const base_communication_server_t *
 
         save_led_config();
 
-        return BASE_COMMUNICATION_STATUS_SUCCESS;
+        return BASE_COMMUNICATION_STATUS_MESSAGE;
     } else if (command->opcode == BASE_COMMUNICATION_SUB_COMMAND_IP_ADDR_GET) {
 
         ble_gap_addr_t ble_addr;
@@ -348,9 +375,9 @@ static uint8_t base_communication_command_cb(const base_communication_server_t *
     } else if (command->opcode == BASE_COMMUNICATION_SUB_COMMAND_FW_VERSION_GET) {
 
         static uint8_t msg[3];
-        msg[1] = app_version;
-        msg[2] = (app_build & 0xff);
-        msg[3] = (app_build >> 8);
+        msg[0] = app_version;
+        msg[1] = (app_build & 0xff);
+        msg[2] = (app_build >> 8);
 
         p_response->response = &msg[0];
         p_response->length = 3;
@@ -548,6 +575,8 @@ static void provisioning_complete_cb(void)
     conn_params_init();
 #endif
 
+    commissioning_start_time = timer_now();
+
     dsm_local_unicast_addresses_get(&node_address);
 
     unicast_address_print();
@@ -578,6 +607,17 @@ static void reset_wdt_timer(void) {
 
 
 /********** init and setup ***********/
+
+
+static void check_commissioning_state() {
+
+    if (commissioning_start_time == 0) return;
+
+    if (timer_diff(timer_now(), commissioning_start_time) > SEC_TO_US(33)) {
+        commissioning_start_time = 0;
+        factory_reset();
+    }
+} 
 
 static void app_start(void) {
 
@@ -730,18 +770,26 @@ int main(void) {
     start();
     reset_wdt_timer();
 
+    timestamp_t event_time = timer_now();
+
     for (;;) {
         (void)sd_app_evt_wait();
         reset_wdt_timer();
+
+        check_commissioning_state();
+
+        // Just for test
+        if (timer_diff(timer_now(), event_time) > SEC_TO_US(20)) {
+            app_level_current_value_publish(&m_level_server_0);
+        }
+
     }
 }
 
 //TODO
 /*
 
-custom model
-
-restart if comissioning was not finished
+need fix crash
 
 enocean switch
 
